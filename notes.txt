@@ -1,0 +1,8 @@
+# Step 2 — Scaffold Next.js into the current directory (.)
+npx create-next-app@latest . --typescript --tailwind --app --no-src-dir --import-alias "@/*"
+
+
+# Install Vercel CLI (optional, for CLI-based deploy)
+npm install -g vercel
+# Deploy (or just connect GitHub repo on vercel.com — no CLI needed)
+vercel
