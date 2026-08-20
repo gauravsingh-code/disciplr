@@ -1,3 +1,75 @@
+
+npm run dev
+
+
+disciplr/
+├── app/                         # Next.js App Router
+│   ├── (auth)/                  # Auth route group (login, signup, callback)
+│   │   ├── login/
+│   │   │   └── page.tsx         # Login page
+│   │   └── auth/
+│   │       └── callback/
+│   │           └── route.ts     # Supabase Auth OAuth / magic link callback
+│   ├── (dashboard)/             # Protected app routes
+│   │   └── dashboard/
+│   │       ├── page.tsx         # Main habit tracker dashboard (Epic 1)
+│   │       └── habits/
+│   │           └── page.tsx     # Habit management page
+│   ├── [username]/              # Dynamic public profile page (Epic 3)
+│   │   └── page.tsx             # GitHub-style contribution grid & proof feed
+│   ├── api/
+│   │   └── flex-card/
+│   │       └── route.ts         # Server-side Flex Card image generation (Epic 2)
+│   ├── layout.tsx               # Root layout (Fonts, Providers, Navbar)
+│   ├── page.tsx                 # Public landing page
+│   └── globals.css              # Global styles & Tailwind configuration
+│
+├── actions/                     # Next.js Server Actions ('use server')
+│   ├── habits.ts                # Create/edit/delete habit actions
+│   ├── habit-logs.ts            # Daily check-in & proof image upload actions
+│   └── profile.ts               # Profile update actions
+│
+├── components/                  # React Components (Server Components by default)
+│   ├── ui/                      # Base reusable UI components (Buttons, Inputs, Modals, Badges)
+│   ├── habits/                  # Habit-related components
+│   │   ├── habit-card.tsx       # Individual habit check-in card
+│   │   ├── habit-list.tsx       # Daily check-in list
+│   │   └── proof-uploader.tsx   # Image proof upload client component
+│   ├── flex-card/               # Flex Card generator components (Epic 2)
+│   │   ├── flex-card-preview.tsx # Preview & 1-click export component
+│   │   └── flex-card-canvas.tsx  # 1200x630 canvas generator
+│   ├── profile/                 # Public profile components (Epic 3)
+│   │   ├── contribution-grid.tsx # GitHub-style consistency heat-map
+│   │   └── proof-feed.tsx        # Historical proof portfolio feed
+│   └── navbar.tsx               # Global Navigation Bar
+│
+├── utils/                       # Core utility functions & helpers
+│   ├── supabase/                # Supabase client utilities (@supabase/ssr)
+│   │   ├── client.ts            # Browser client (Client Components)
+│   │   ├── server.ts            # Async server client (Server Components/Actions)
+│   │   └── middleware.ts        # Auth session refreshing middleware
+│   ├── streak-engine.ts         # Timezone-aware streak calculation logic
+│   └── date-helpers.ts          # Local timezone date formatting & roll-over helpers
+│
+├── types/                       # TypeScript declarations & Database types
+│   ├── database.types.ts        # Supabase auto-generated DB types
+│   └── index.ts                 # Habit, Log, Profile, & FlexCard interfaces
+│
+├── supabase/                    # Supabase Database & Migration SQL files
+│   └── schema.sql               # Phase 1 database tables & RLS policies
+│
+├── middleware.ts                # Next.js Edge Middleware for protected routes
+├── project_instructions.md      # Architectural guardrails & AI prompt guidelines
+├── Proof_of_Work_Habit_Tracker_PRD.pdf # Product Requirements Document
+├── .env.example                 # Environment variables template
+├── .env.local                   # Local environment credentials (git-ignored)
+├── next.config.ts               # Next.js configuration
+├── package.json                 # Project dependencies
+└── tsconfig.json                # TypeScript configuration
+
+
+
+
 # Step 2 — Scaffold Next.js into the current directory (.)
 npx create-next-app@latest . --typescript --tailwind --app --no-src-dir --import-alias "@/*"
 

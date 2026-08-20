@@ -1,3 +1,14 @@
+CREATE TABLE users (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(100) NOT NULL,
+    encrypted_password varchar(200) NOT NULL,
+    description TEXT,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+);
+
+
 -- Phase 1 Database Schema for Disciplr (Proof of Work Habit Tracker)
 
 -- 1. PROFILES TABLE
