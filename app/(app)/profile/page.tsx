@@ -4,6 +4,7 @@ import React from 'react';
 import { useEmber } from '@/context/ember-context';
 import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
+import { ActivityCalendar } from '@/components/profile/activity-calendar';
 import {
   Flame,
   Shield,
@@ -15,7 +16,7 @@ import {
 } from 'lucide-react';
 
 export default function ProfilePage() {
-  const { user, habits, completedTodayHabitIds } = useEmber();
+  const { user, habits, completedTodayHabitIds, feedLogs } = useEmber();
 
   const activeHabits = habits.filter((h) => !h.isArchived);
   const longestStreakAcrossHabits = habits.length > 0
@@ -100,6 +101,13 @@ export default function ProfilePage() {
           </div>
         </div>
       </div>
+
+      {/* Annual LeetCode/GitHub-Style Habit Heatmap */}
+      <ActivityCalendar
+        logs={feedLogs}
+        userId={user.id}
+        completedTodayHabitIds={completedTodayHabitIds}
+      />
 
       {/* 7-Day Consistency Heat-Map */}
       <div className="glass-card rounded-2xl p-5 space-y-3">

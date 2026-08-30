@@ -183,7 +183,10 @@ export default function SettingsPage() {
               } catch {
                 // ignore
               }
-              window.location.href = '/login';
+              try {
+                localStorage.clear();
+              } catch {}
+              window.location.replace('/login');
             }}
             leftIcon={<LogOut className="w-4 h-4" />}
           >

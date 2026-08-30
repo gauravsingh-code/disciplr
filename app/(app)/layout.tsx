@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { usePathname } from 'next/navigation';
 import { AppHeader } from '@/components/navigation/app-header';
 import { BottomNav } from '@/components/navigation/bottom-nav';
 import { Sidebar } from '@/components/navigation/sidebar';
@@ -17,7 +18,28 @@ export default function AppLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const pathname = usePathname();
   const { previewMode } = useEmber();
+
+  // Guard against browser back-forward cache (bfcache) after signout
+  useEffect(() => {
+    const handlePageShow = (event: PageTransitionEvent) => {
+      if (event.persisted) {
+        fetch('/api/auth/me')
+          .then((res) => {
+            if (!res.ok) {
+              window.location.replace('/login');
+            }
+          })
+          .catch(() => {
+            window.location.replace('/login');
+          });
+      }
+    };
+
+    window.addEventListener('pageshow', handlePageShow);
+    return () => window.removeEventListener('pageshow', handlePageShow);
+  }, []);
 
   const [habitModalOpen, setHabitModalOpen] = useState(false);
   const [habitToEdit, setHabitToEdit] = useState<Habit | null>(null);
@@ -42,10 +64,6 @@ export default function AppLayout({
     <div className="min-h-screen bg-zinc-950 flex flex-col selection:bg-orange-500/30 selection:text-orange-200">
       {/* Top Header */}
       <AppHeader
-        onOpenHabitModal={() => {
-          setHabitToEdit(null);
-          setHabitModalOpen(true);
-        }}
         onOpenShieldModal={() => setShieldModalOpen(true)}
         onOpenPodModal={() => setPodModalOpen(true)}
       />
@@ -61,8 +79,8 @@ export default function AppLayout({
                 <div className="w-24 h-4 bg-zinc-800 rounded-full" />
               </div>
 
-              {/* Scrollable Viewport */}
-              <div className="flex-1 overflow-y-auto pb-20 p-4">
+              {/* Scrollable Viewport with key={pathname} to force re-render on back navigation */}
+              <div key={pathname} className="flex-1 overflow-y-auto pb-20 p-4">
                 {children}
               </div>
 
@@ -83,8 +101,8 @@ export default function AppLayout({
               onOpenShieldModal={() => setShieldModalOpen(true)}
             />
 
-            {/* Main Viewport */}
-            <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-3xl pb-24 md:pb-12">
+            {/* Main Viewport with key={pathname} to force re-render on back navigation */}
+            <main key={pathname} className="flex-1 p-4 sm:p-6 lg:p-8 max-w-3xl pb-24 md:pb-12">
               {children}
             </main>
           </div>

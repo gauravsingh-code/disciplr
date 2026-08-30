@@ -2,11 +2,11 @@ import { CheckInLog, Habit, Pod, UserProfile } from '@/types/ember';
 
 export const INITIAL_USER: UserProfile = {
   id: '',
-  name: 'New Member',
-  username: 'user',
+  name: '',
+  username: '',
   email: '',
-  avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80',
-  ageVerified: true,
+  avatar: '',
+  ageVerified: false,
   activePodId: undefined,
   streakShields: {
     totalAvailable: 2,

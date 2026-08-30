@@ -21,6 +21,16 @@ export default function LoginPage() {
   const router = useRouter();
   const { updateUserProfile } = useEmber();
 
+  // Block back button from cycling previous authenticated history URLs
+  React.useEffect(() => {
+    window.history.pushState(null, '', window.location.href);
+    const handlePopState = () => {
+      window.history.pushState(null, '', window.location.href);
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);

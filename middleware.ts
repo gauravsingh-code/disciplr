@@ -5,6 +5,16 @@ const JWT_SECRET_STRING =
   process.env.JWT_SECRET || 'disciplr-default-jwt-secret-key-32-chars-long!'
 const JWT_SECRET = new TextEncoder().encode(JWT_SECRET_STRING)
 
+const PROTECTED_ROUTES = [
+  '/today',
+  '/pod',
+  '/habits',
+  '/profile',
+  '/settings',
+  '/onboarding',
+  '/dashboard',
+]
+
 export async function middleware(request: NextRequest) {
   const token = request.cookies.get('auth_token')?.value
   let isAuthenticated = false
@@ -20,21 +30,41 @@ export async function middleware(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname
 
-  // Protected routes: redirect unauthenticated users to /login
-  if (!isAuthenticated && pathname.startsWith('/dashboard')) {
+  // 1. Protected routes: redirect unauthenticated users to /login
+  const isProtectedRoute = PROTECTED_ROUTES.some(
+    (route) => pathname === route || pathname.startsWith(`${route}/`)
+  )
+
+  if (!isAuthenticated && isProtectedRoute) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
-    return NextResponse.redirect(url)
+    const response = NextResponse.redirect(url)
+    // Prevent browser bfcache of protected redirects
+    response.headers.set(
+      'Cache-Control',
+      'no-store, no-cache, must-revalidate, proxy-revalidate'
+    )
+    return response
   }
 
-  // Auth pages: redirect authenticated users to /dashboard
+  // 2. Auth pages: redirect authenticated users to /today
   if (isAuthenticated && (pathname === '/login' || pathname === '/signup')) {
     const url = request.nextUrl.clone()
-    url.pathname = '/dashboard'
+    url.pathname = '/today'
     return NextResponse.redirect(url)
   }
 
-  return NextResponse.next()
+  const response = NextResponse.next()
+
+  // For protected routes, disallow browser caching of authenticated content
+  if (isProtectedRoute) {
+    response.headers.set(
+      'Cache-Control',
+      'no-store, no-cache, must-revalidate, proxy-revalidate'
+    )
+  }
+
+  return response
 }
 
 export const config = {

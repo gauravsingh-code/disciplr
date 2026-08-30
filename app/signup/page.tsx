@@ -23,6 +23,16 @@ export default function SignupPage() {
   const router = useRouter();
   const { updateUserProfile } = useEmber();
 
+  // Block back button from cycling previous authenticated history URLs
+  React.useEffect(() => {
+    window.history.pushState(null, '', window.location.href);
+    const handlePopState = () => {
+      window.history.pushState(null, '', window.location.href);
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
