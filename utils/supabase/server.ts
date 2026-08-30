@@ -4,9 +4,22 @@ import { cookies } from 'next/headers'
 export async function createClient() {
   const cookieStore = await cookies()
 
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+  if (!url || !key) {
+    console.error('❌ Supabase Env Error:', {
+      url: url || 'MISSING',
+      key: key ? 'PRESENT' : 'MISSING',
+    })
+    throw new Error(
+      `Your project's URL and Key are required to create a Supabase client! URL is ${url ? 'set' : 'missing'}, Key is ${key ? 'set' : 'missing'}.`
+    )
+  }
+
   return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    url,
+    key,
     {
       cookies: {
         getAll() {

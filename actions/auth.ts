@@ -3,6 +3,13 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'
+import {
+  hashPassword,
+  comparePassword,
+  createSessionToken,
+  setSessionCookie,
+  clearSessionCookie,
+} from '@/utils/auth'
 
 export type AuthState = {
   error?: string
@@ -10,71 +17,101 @@ export type AuthState = {
 }
 
 export async function login(prevState: AuthState | void, formData: FormData): Promise<AuthState> {
-  const email = formData.get('email') as string
+  const identifier = ((formData.get('identifier') || formData.get('email') || formData.get('name')) as string)?.trim()
   const password = formData.get('password') as string
 
-  if (!email || !password) {
-    return { error: 'Email and password are required.' }
+  if (!identifier || !password) {
+    return { error: 'Email/Name and password are required.' }
   }
 
   const supabase = await createClient()
 
-  const { error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  })
+  const { data: user, error: findError } = await supabase
+    .from('users')
+    .select('id, name, email, encrypted_password, is_active')
+    .or(`email.eq.${identifier.toLowerCase()},name.eq.${identifier}`)
+    .maybeSingle()
 
-  if (error) {
-    return { error: error.message }
+  if (findError || !user) {
+    return { error: 'Invalid email/name or password.' }
   }
 
+  if (!user.is_active) {
+    return { error: 'Account is deactivated.' }
+  }
+
+  const isPasswordValid = await comparePassword(password, user.encrypted_password)
+
+  if (!isPasswordValid) {
+    return { error: 'Invalid email/name or password.' }
+  }
+
+  const token = await createSessionToken({
+    userId: user.id,
+    name: user.name,
+    email: user.email,
+  })
+  await setSessionCookie(token)
+
   revalidatePath('/', 'layout')
-  redirect('/dashboard')
+  redirect('/today')
 }
 
 export async function signup(prevState: AuthState | void, formData: FormData): Promise<AuthState> {
-  const email = formData.get('email') as string
+  const email = ((formData.get('email') as string) || '').trim().toLowerCase()
   const password = formData.get('password') as string
-  const username = formData.get('username') as string
+  const name = ((formData.get('name') || formData.get('username')) as string || '').trim()
 
-  if (!email || !password || !username) {
-    return { error: 'Email, password, and username are required.' }
+  if (!email || !password || !name) {
+    return { error: 'Email, password, and name are required.' }
   }
 
-  // Username validation (alphanumeric, underscores, hyphens, min 3 chars)
-  const usernameRegex = /^[a-zA-Z0-9_-]{3,20}$/
-  if (!usernameRegex.test(username)) {
-    return { error: 'Username must be 3-20 characters long and contain only letters, numbers, underscores, or hyphens.' }
+  if (password.length < 6) {
+    return { error: 'Password must be at least 6 characters long.' }
   }
 
   const supabase = await createClient()
 
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      data: {
-        username,
-      },
-    },
+  const { data: existingUser } = await supabase
+    .from('users')
+    .select('id, name, email')
+    .or(`email.eq.${email},name.eq.${name}`)
+    .maybeSingle()
+
+  if (existingUser) {
+    return { error: 'An account with this email or name already exists.' }
+  }
+
+  const encrypted_password = await hashPassword(password)
+
+  const { data: newUser, error: insertError } = await supabase
+    .from('users')
+    .insert({
+      name,
+      email,
+      encrypted_password,
+      is_active: true,
+    })
+    .select('id, name, email')
+    .single()
+
+  if (insertError || !newUser) {
+    return { error: insertError?.message || 'Failed to create user account.' }
+  }
+
+  const token = await createSessionToken({
+    userId: newUser.id,
+    name: newUser.name,
+    email: newUser.email,
   })
-
-  if (error) {
-    return { error: error.message }
-  }
-
-  // If Supabase is configured with email confirmation
-  if (data?.user && data.user.identities && data.user.identities.length === 0) {
-    return { error: 'An account with this email already exists.' }
-  }
+  await setSessionCookie(token)
 
   revalidatePath('/', 'layout')
-  redirect('/dashboard')
+  redirect('/onboarding')
 }
 
 export async function logout() {
-  const supabase = await createClient()
-  await supabase.auth.signOut()
+  await clearSessionCookie()
   revalidatePath('/', 'layout')
   redirect('/login')
 }
