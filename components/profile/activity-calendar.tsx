@@ -257,7 +257,7 @@ export function ActivityCalendar({
             </button>
 
             {/* Option 3: Full Year */}
-            <button
+            {/* <button
               onClick={() => setViewMode('full')}
               className={`px-2.5 py-1 rounded-lg flex items-center gap-1.5 transition-all cursor-pointer ${
                 viewMode === 'full'
@@ -267,7 +267,7 @@ export function ActivityCalendar({
             >
               <Maximize2 className="w-3.5 h-3.5" />
               <span>Full Year (12M)</span>
-            </button>
+            </button> */}
           </div>
 
           {/* Year Navigator */}

@@ -10,50 +10,55 @@ export async function GET() {
     }
 
     const supabase = await createClient();
-    const { data: habits, error } = await supabase
+    const { data: rawHabits, error } = await supabase
       .from('habits')
-      .select(`
-        id,
-        user_id,
-        title,
-        emoji,
-        frequency_type,
-        frequency_days,
-        times_per_week,
-        reminder_time,
-        is_private,
-        current_streak,
-        longest_streak,
-        streak_shields_used,
-        is_archived,
-        created_at,
-        habit_pods(pod_id)
-      `)
+      .select('*')
       .eq('user_id', session.userId)
       .order('created_at', { ascending: false });
 
     if (error) {
+      console.error('Error querying habits:', error);
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    const formattedHabits = (habits || []).map((h: any) => ({
+    let habitPodsMap: Record<string, string[]> = {};
+    const habitIds = (rawHabits || []).map((h: any) => h.id);
+    if (habitIds.length > 0) {
+      try {
+        const { data: hpData } = await supabase
+          .from('habit_pods')
+          .select('habit_id, pod_id')
+          .in('habit_id', habitIds);
+
+        if (hpData) {
+          hpData.forEach((hp: any) => {
+            if (!habitPodsMap[hp.habit_id]) {
+              habitPodsMap[hp.habit_id] = [];
+            }
+            habitPodsMap[hp.habit_id].push(hp.pod_id);
+          });
+        }
+      } catch {}
+    }
+
+    const formattedHabits = (rawHabits || []).map((h: any) => ({
       id: h.id,
       userId: h.user_id,
       title: h.title,
-      emoji: h.emoji,
+      emoji: h.emoji || '⚡',
       frequency: {
-        type: h.frequency_type,
-        daysOfWeek: h.frequency_days,
-        timesPerWeek: h.times_per_week,
+        type: h.frequency_type || 'daily',
+        daysOfWeek: Array.isArray(h.frequency_days) ? h.frequency_days : [],
+        timesPerWeek: h.times_per_week || 7,
       },
-      reminderTime: h.reminder_time,
-      isPrivate: h.is_private,
-      sharedPodIds: (h.habit_pods || []).map((hp: any) => hp.pod_id),
-      currentStreak: h.current_streak,
-      longestStreak: h.longest_streak,
-      streakShieldsUsed: h.streak_shields_used,
-      isArchived: h.is_archived,
-      createdAt: h.created_at,
+      reminderTime: h.reminder_time || '08:00 AM',
+      isPrivate: !!h.is_private,
+      sharedPodIds: habitPodsMap[h.id] || [],
+      currentStreak: Number(h.current_streak) || 0,
+      longestStreak: Number(h.longest_streak) || 0,
+      streakShieldsUsed: Number(h.streak_shields_used) || 0,
+      isArchived: !!h.is_archived,
+      createdAt: h.created_at || new Date().toISOString(),
     }));
 
     return NextResponse.json({ habits: formattedHabits });
@@ -110,11 +115,13 @@ export async function POST(request: Request) {
 
     // 2. Link shared Pods if not private
     if (!isPrivate && Array.isArray(sharedPodIds) && sharedPodIds.length > 0) {
-      const links = sharedPodIds.map((podId: string) => ({
-        habit_id: newHabit.id,
-        pod_id: podId,
-      }));
-      await supabase.from('habit_pods').insert(links);
+      try {
+        const links = sharedPodIds.map((podId: string) => ({
+          habit_id: newHabit.id,
+          pod_id: podId,
+        }));
+        await supabase.from('habit_pods').insert(links);
+      } catch {}
     }
 
     return NextResponse.json(

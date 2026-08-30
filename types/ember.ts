@@ -125,3 +125,34 @@ export interface UserProfile {
   badges: MilestoneBadge[];
   createdAt: string;
 }
+
+export interface PostReply {
+  id: string;
+  postId: string;
+  userId: string;
+  userName: string;
+  userUsername: string;
+  userAvatar: string;
+  content: string;
+  createdAt: string;
+}
+
+export interface Post {
+  id: string;
+  userId: string;
+  userName: string;
+  userUsername: string;
+  userAvatar: string;
+  content: string;
+  mediaUrl?: string;
+  podId?: string;
+  podName?: string;
+  isPodOnly: boolean;
+  likesCount: number;
+  hasLiked: boolean;
+  repliesCount: number;
+  repostsCount: number;
+  hasReposted: boolean;
+  createdAt: string;
+  replies?: PostReply[];
+}

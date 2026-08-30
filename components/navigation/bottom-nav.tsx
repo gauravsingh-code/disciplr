@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { CheckCircle2, Flame, Layers, UserCircle, Settings } from 'lucide-react';
+import { CheckCircle2, Flame, MessageSquare, Layers, UserCircle, Settings } from 'lucide-react';
 import { useEmber } from '@/context/ember-context';
 
 export function BottomNav() {
@@ -21,9 +21,14 @@ export function BottomNav() {
       badge: remainingToday > 0 ? remainingToday : undefined,
     },
     {
-      label: 'Pod Feed',
+      label: 'Pod',
       href: '/pod',
       icon: Flame,
+    },
+    {
+      label: 'Feed',
+      href: '/feed',
+      icon: MessageSquare,
     },
     {
       label: 'Habits',
@@ -34,11 +39,6 @@ export function BottomNav() {
       label: 'Profile',
       href: '/profile',
       icon: UserCircle,
-    },
-    {
-      label: 'Settings',
-      href: '/settings',
-      icon: Settings,
     },
   ];
 

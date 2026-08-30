@@ -161,6 +161,55 @@ CREATE TABLE IF NOT EXISTS public.notification_settings (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- ---------------------------------------------------------
+-- 12. POSTS TABLE (Twitter/X-style Posts)
+-- ---------------------------------------------------------
+CREATE TABLE IF NOT EXISTS public.posts (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+    content TEXT NOT NULL,
+    media_url TEXT,
+    pod_id UUID REFERENCES public.pods(id) ON DELETE SET NULL,
+    is_pod_only BOOLEAN NOT NULL DEFAULT FALSE,
+    likes_count INT NOT NULL DEFAULT 0,
+    reposts_count INT NOT NULL DEFAULT 0,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- ---------------------------------------------------------
+-- 13. POST LIKES TABLE
+-- ---------------------------------------------------------
+CREATE TABLE IF NOT EXISTS public.post_likes (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    post_id UUID NOT NULL REFERENCES public.posts(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT unique_post_user_like UNIQUE (post_id, user_id)
+);
+
+-- ---------------------------------------------------------
+-- 14. POST REPLIES TABLE
+-- ---------------------------------------------------------
+CREATE TABLE IF NOT EXISTS public.post_replies (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    post_id UUID NOT NULL REFERENCES public.posts(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+    content VARCHAR(280) NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- ---------------------------------------------------------
+-- 15. POST REPOSTS TABLE
+-- ---------------------------------------------------------
+CREATE TABLE IF NOT EXISTS public.post_reposts (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    post_id UUID NOT NULL REFERENCES public.posts(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT unique_post_user_repost UNIQUE (post_id, user_id)
+);
+
 -- =========================================================
 -- INDEXES FOR MAXIMUM QUERY PERFORMANCE
 -- =========================================================
@@ -173,6 +222,11 @@ CREATE INDEX IF NOT EXISTS idx_pod_memberships_pod ON public.pod_memberships(pod
 CREATE INDEX IF NOT EXISTS idx_habit_pods_pod ON public.habit_pods(pod_id);
 CREATE INDEX IF NOT EXISTS idx_reactions_log ON public.reactions(log_id);
 CREATE INDEX IF NOT EXISTS idx_comments_log ON public.comments(log_id);
+CREATE INDEX IF NOT EXISTS idx_posts_user_id ON public.posts(user_id);
+CREATE INDEX IF NOT EXISTS idx_posts_pod_id ON public.posts(pod_id);
+CREATE INDEX IF NOT EXISTS idx_posts_created_at ON public.posts(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_post_likes_post_id ON public.post_likes(post_id);
+CREATE INDEX IF NOT EXISTS idx_post_replies_post_id ON public.post_replies(post_id);
 
 -- =========================================================
 -- ROW LEVEL SECURITY (RLS) POLICIES
@@ -188,6 +242,10 @@ ALTER TABLE public.comments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.streak_shields ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.milestone_badges ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.notification_settings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.posts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.post_likes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.post_replies ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.post_reposts ENABLE ROW LEVEL SECURITY;
 
 -- Allow public service role or authenticated app backend access
 CREATE POLICY "Allow authenticated access to users" ON public.users FOR ALL USING (true);
@@ -201,3 +259,7 @@ CREATE POLICY "Allow access to comments" ON public.comments FOR ALL USING (true)
 CREATE POLICY "Allow access to streak_shields" ON public.streak_shields FOR ALL USING (true);
 CREATE POLICY "Allow access to milestone_badges" ON public.milestone_badges FOR ALL USING (true);
 CREATE POLICY "Allow access to notification_settings" ON public.notification_settings FOR ALL USING (true);
+CREATE POLICY "Allow access to posts" ON public.posts FOR ALL USING (true);
+CREATE POLICY "Allow access to post_likes" ON public.post_likes FOR ALL USING (true);
+CREATE POLICY "Allow access to post_replies" ON public.post_replies FOR ALL USING (true);
+CREATE POLICY "Allow access to post_reposts" ON public.post_reposts FOR ALL USING (true);

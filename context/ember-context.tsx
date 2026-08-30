@@ -8,6 +8,8 @@ import {
   Pod,
   ReactionEmoji,
   UserProfile,
+  Post,
+  PostReply,
 } from '@/types/ember';
 import {
   INITIAL_FEED_LOGS,
@@ -21,7 +23,9 @@ interface EmberContextType {
   habits: Habit[];
   pods: Pod[];
   activePod: Pod | null;
+  activePodId: string;
   feedLogs: CheckInLog[];
+  posts: Post[];
   completedTodayHabitIds: string[];
   activeMilestone: MilestoneBadge | null;
   previewMode: 'mobile' | 'responsive';
@@ -37,6 +41,11 @@ interface EmberContextType {
   updateHabit: (habitId: string, updates: Partial<Habit>) => void;
   archiveHabit: (habitId: string) => void;
   deleteHabit: (habitId: string) => void;
+  createPost: (data: { content: string; mediaUrl?: string; podId?: string; isPodOnly?: boolean }) => Promise<Post | null>;
+  likePost: (postId: string) => void;
+  replyToPost: (postId: string, content: string) => Promise<PostReply | null>;
+  deletePost: (postId: string) => Promise<void>;
+  refreshPosts: () => Promise<void>;
   createPod: (data: { name: string; description: string; emoji: string }) => Pod;
   joinPodByCode: (code: string) => { success: boolean; message: string; pod?: Pod };
   leavePod: (podId: string) => void;
@@ -56,11 +65,24 @@ export function EmberProvider({ children }: { children: React.ReactNode }) {
   const [habits, setHabits] = useState<Habit[]>(INITIAL_HABITS);
   const [pods, setPods] = useState<Pod[]>(INITIAL_PODS);
   const [feedLogs, setFeedLogs] = useState<CheckInLog[]>(INITIAL_FEED_LOGS);
+  const [posts, setPosts] = useState<Post[]>([]);
   const [completedTodayHabitIds, setCompletedTodayHabitIds] = useState<string[]>([]);
   const [activePodId, setActivePodIdState] = useState<string>('');
   const [activeMilestone, setActiveMilestone] = useState<MilestoneBadge | null>(null);
   const [previewMode, setPreviewMode] = useState<'mobile' | 'responsive'>('responsive');
   const [isLoaded, setIsLoaded] = useState(false);
+
+  const refreshPosts = async () => {
+    try {
+      const res = await fetch('/api/posts');
+      if (res.ok) {
+        const data = await res.json();
+        if (data?.posts) {
+          setPosts(data.posts);
+        }
+      }
+    } catch {}
+  };
 
   // Hydrate from localStorage first, then sync live backend data if available
   useEffect(() => {
@@ -72,6 +94,7 @@ export function EmberProvider({ children }: { children: React.ReactNode }) {
         if (parsed.habits) setHabits(parsed.habits);
         if (parsed.pods) setPods(parsed.pods);
         if (parsed.feedLogs) setFeedLogs(parsed.feedLogs);
+        if (parsed.posts) setPosts(parsed.posts);
         if (parsed.completedTodayHabitIds)
           setCompletedTodayHabitIds(parsed.completedTodayHabitIds);
         if (parsed.activePodId) setActivePodIdState(parsed.activePodId);
@@ -89,14 +112,14 @@ export function EmberProvider({ children }: { children: React.ReactNode }) {
       .then((data) => {
         if (data && data.user) {
           setUser(data.user);
-          if (data.habits && data.habits.length > 0) {
+          if (Array.isArray(data.habits)) {
             setHabits(data.habits);
           }
-          if (data.pods && data.pods.length > 0) {
+          if (Array.isArray(data.pods) && data.pods.length > 0) {
             setPods(data.pods);
             if (!activePodId) setActivePodIdState(data.pods[0].id);
           }
-          if (data.completedTodayHabitIds) {
+          if (Array.isArray(data.completedTodayHabitIds)) {
             setCompletedTodayHabitIds(data.completedTodayHabitIds);
           }
         }
@@ -106,15 +129,28 @@ export function EmberProvider({ children }: { children: React.ReactNode }) {
         setIsLoaded(true);
       });
 
+    // Also fetch habits directly to ensure complete sync
+    fetch('/api/habits')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data && Array.isArray(data.habits)) {
+          setHabits(data.habits);
+        }
+      })
+      .catch(() => {});
+
     // Also fetch live Pod feed
     fetch('/api/feed')
-      .then((res) => res.ok ? res.json() : null)
+      .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (data && data.feed && data.feed.length > 0) {
           setFeedLogs(data.feed);
         }
       })
       .catch(() => {});
+
+    // Fetch initial community posts
+    refreshPosts();
   }, []);
 
   // Sync to localStorage
@@ -137,7 +173,10 @@ export function EmberProvider({ children }: { children: React.ReactNode }) {
     }
   }, [user, habits, pods, feedLogs, completedTodayHabitIds, activePodId, isLoaded]);
 
-  const activePod = pods.find((p) => p.id === activePodId) || pods[0] || null;
+  const activePod =
+    activePodId === 'me'
+      ? null
+      : pods.find((p) => p.id === activePodId) || pods[0] || null;
 
   const setActivePodId = (podId: string) => {
     setActivePodIdState(podId);
@@ -564,12 +603,125 @@ export function EmberProvider({ children }: { children: React.ReactNode }) {
     }));
   };
 
+  const createPost = async (data: {
+    content: string;
+    mediaUrl?: string;
+    podId?: string;
+    isPodOnly?: boolean;
+  }): Promise<Post | null> => {
+    const tempId = `post_${Date.now()}`;
+    const optimisticPost: Post = {
+      id: tempId,
+      userId: user.id,
+      userName: user.name,
+      userUsername: user.username,
+      userAvatar: user.avatar,
+      content: data.content,
+      mediaUrl: data.mediaUrl,
+      podId: data.podId,
+      podName: activePod?.name,
+      isPodOnly: !!data.isPodOnly,
+      likesCount: 0,
+      hasLiked: false,
+      repliesCount: 0,
+      repostsCount: 0,
+      hasReposted: false,
+      createdAt: new Date().toISOString(),
+    };
+
+    setPosts((prev) => [optimisticPost, ...prev]);
+
+    try {
+      const res = await fetch('/api/posts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+
+      if (res.ok) {
+        const resData = await res.json();
+        if (resData?.post) {
+          setPosts((prev) =>
+            prev.map((p) => (p.id === tempId ? resData.post : p))
+          );
+          return resData.post;
+        }
+      }
+    } catch {}
+
+    return optimisticPost;
+  };
+
+  const likePost = (postId: string) => {
+    setPosts((prev) =>
+      prev.map((post) => {
+        if (post.id !== postId) return post;
+        const nextLiked = !post.hasLiked;
+        return {
+          ...post,
+          hasLiked: nextLiked,
+          likesCount: Math.max(0, post.likesCount + (nextLiked ? 1 : -1)),
+        };
+      })
+    );
+
+    fetch(`/api/posts/${postId}/like`, {
+      method: 'POST',
+    }).catch(() => {});
+  };
+
+  const replyToPost = async (postId: string, content: string): Promise<PostReply | null> => {
+    const tempId = `reply_${Date.now()}`;
+    const optimisticReply: PostReply = {
+      id: tempId,
+      postId,
+      userId: user.id,
+      userName: user.name,
+      userUsername: user.username,
+      userAvatar: user.avatar,
+      content,
+      createdAt: new Date().toISOString(),
+    };
+
+    setPosts((prev) =>
+      prev.map((post) =>
+        post.id === postId
+          ? { ...post, repliesCount: post.repliesCount + 1 }
+          : post
+      )
+    );
+
+    try {
+      const res = await fetch(`/api/posts/${postId}/replies`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data?.reply) return data.reply;
+      }
+    } catch {}
+
+    return optimisticReply;
+  };
+
+  const deletePost = async (postId: string) => {
+    setPosts((prev) => prev.filter((p) => p.id !== postId));
+
+    fetch(`/api/posts/${postId}`, {
+      method: 'DELETE',
+    }).catch(() => {});
+  };
+
   const resetAllToDefault = () => {
     localStorage.removeItem(STORAGE_KEY);
     setUser(INITIAL_USER);
     setHabits(INITIAL_HABITS);
     setPods(INITIAL_PODS);
     setFeedLogs(INITIAL_FEED_LOGS);
+    setPosts([]);
     setCompletedTodayHabitIds([]);
     setActivePodIdState('');
   };
@@ -581,7 +733,9 @@ export function EmberProvider({ children }: { children: React.ReactNode }) {
         habits,
         pods,
         activePod,
+        activePodId,
         feedLogs,
+        posts,
         completedTodayHabitIds,
         activeMilestone,
         previewMode,
@@ -594,6 +748,11 @@ export function EmberProvider({ children }: { children: React.ReactNode }) {
         updateHabit,
         archiveHabit,
         deleteHabit,
+        createPost,
+        likePost,
+        replyToPost,
+        deletePost,
+        refreshPosts,
         createPod,
         joinPodByCode,
         leavePod,

@@ -25,6 +25,7 @@ export default function TodayPage() {
     completedTodayHabitIds,
     user,
     activePod,
+    activePodId,
   } = useEmber();
 
   const [activeFilter, setActiveFilter] = useState<'all' | 'remaining' | 'completed'>('all');
@@ -33,15 +34,27 @@ export default function TodayPage() {
   const [proofModalOpen, setProofModalOpen] = useState(false);
   const [proofHabit, setProofHabit] = useState<Habit | null>(null);
 
-  const activeHabits = habits.filter((h) => !h.isArchived);
-  const completedCount = activeHabits.filter((h) =>
+  // Filter habits according to selected Scope: 'me' (personal habits) vs 'pod' (shared to this pod)
+  const isPersonalScope = activePodId === 'me' || !activePod;
+
+  const scopedHabits = habits.filter((h) => {
+    if (h.isArchived) return false;
+    if (isPersonalScope) {
+      // In "Me" mode: show personal habits or habits created by this user
+      return true;
+    }
+    // In "Pod" mode: show habits that are linked / shared with this specific Pod
+    return Array.isArray(h.sharedPodIds) && h.sharedPodIds.includes(activePod.id);
+  });
+
+  const completedCount = scopedHabits.filter((h) =>
     completedTodayHabitIds.includes(h.id)
   ).length;
-  const totalCount = activeHabits.length;
+  const totalCount = scopedHabits.length;
   const progressPercent =
     totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
-  const filteredHabits = activeHabits.filter((h) => {
+  const filteredHabits = scopedHabits.filter((h) => {
     const isDone = completedTodayHabitIds.includes(h.id);
     if (activeFilter === 'remaining') return !isDone;
     if (activeFilter === 'completed') return isDone;
@@ -62,12 +75,20 @@ export default function TodayPage() {
           <div className="flex items-center gap-2 text-xs font-semibold text-orange-400 mb-1">
             <Calendar className="w-3.5 h-3.5" />
             <span>{todayFormatted}</span>
+            <span className="text-zinc-600">•</span>
+            <span className="text-zinc-400 font-medium">
+              {isPersonalScope
+                ? '👤 Personal Scope'
+                : `${activePod.emoji} ${activePod.name} Pod`}
+            </span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
-            Today&apos;s Rituals
+            {isPersonalScope ? 'My Personal Rituals' : `${activePod.name} Rituals`}
           </h1>
           <p className="text-xs sm:text-sm text-zinc-400 mt-1">
-            Focus on showing up. One tap to check in.
+            {isPersonalScope
+              ? 'Your private & personal daily habits. One tap to check in.'
+              : `Habits shared with members of ${activePod.name}.`}
           </p>
         </div>
 
@@ -163,12 +184,16 @@ export default function TodayPage() {
           <h3 className="text-sm font-bold text-zinc-200">
             {activeFilter === 'remaining'
               ? 'All clear for today!'
-              : 'No habits found'}
+              : isPersonalScope
+              ? 'No personal habits found'
+              : `No habits shared with ${activePod.name}`}
           </h3>
           <p className="text-xs text-zinc-400 max-w-xs mx-auto">
             {activeFilter === 'remaining'
               ? 'You have completed all scheduled rituals for today.'
-              : 'Create your first daily habit to start building consistency.'}
+              : isPersonalScope
+              ? 'Create your first personal daily habit to start building consistency.'
+              : `Create or link a habit to share accountability with ${activePod.name}.`}
           </p>
           <Button
             variant="primary"

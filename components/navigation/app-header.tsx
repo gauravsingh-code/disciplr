@@ -29,6 +29,7 @@ export function AppHeader({
   const {
     user,
     activePod,
+    activePodId,
     pods,
     setActivePodId,
     previewMode,
@@ -57,9 +58,11 @@ export function AppHeader({
               onClick={() => setPodDropdownOpen(!podDropdownOpen)}
               className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-zinc-900/90 border border-zinc-800 hover:border-zinc-700 text-xs font-semibold text-zinc-200 transition-all cursor-pointer"
             >
-              <span className="text-sm">{activePod?.emoji || '👥'}</span>
+              <span className="text-sm">
+                {activePodId === 'me' || !activePod ? '👤' : activePod.emoji}
+              </span>
               <span className="max-w-[120px] sm:max-w-[160px] truncate">
-                {activePod?.name || 'My Pod'}
+                {activePodId === 'me' || !activePod ? 'Me (Personal)' : activePod.name}
               </span>
               <ChevronDown className="w-3.5 h-3.5 text-zinc-400" />
             </button>
@@ -71,35 +74,70 @@ export function AppHeader({
                   className="fixed inset-0 z-10"
                   onClick={() => setPodDropdownOpen(false)}
                 />
-                <div className="absolute top-full left-0 mt-1.5 w-64 rounded-2xl bg-zinc-900 border border-zinc-800 shadow-2xl p-2 z-20 animate-scale-in">
-                  <div className="px-2 py-1.5 text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
-                    Your Pods ({pods.length}/3)
+                <div className="absolute top-full left-0 mt-1.5 w-64 rounded-2xl bg-zinc-900 border border-zinc-800 shadow-2xl p-2 z-20 animate-scale-in space-y-1">
+                  {/* Personal Option: Me */}
+                  <div className="px-2 py-1 text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
+                    Habit Scope
+                  </div>
+                  <button
+                    onClick={() => {
+                      setActivePodId('me');
+                      setPodDropdownOpen(false);
+                    }}
+                    className={`w-full flex items-center justify-between p-2 rounded-xl text-left text-xs transition-colors cursor-pointer ${
+                      activePodId === 'me' || (!activePod && !activePodId)
+                        ? 'bg-orange-500/10 text-orange-400 font-bold border border-orange-500/30'
+                        : 'text-zinc-300 hover:bg-zinc-800/80'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 truncate">
+                      <span className="text-base">👤</span>
+                      <div>
+                        <div className="font-semibold text-white">Me (Personal)</div>
+                        <div className="text-[10px] text-zinc-400">Only your habits & rituals</div>
+                      </div>
+                    </div>
+                    {(activePodId === 'me' || (!activePod && !activePodId)) && (
+                      <Check className="w-3.5 h-3.5 shrink-0 text-orange-400" />
+                    )}
+                  </button>
+
+                  {/* Section: Your Pods */}
+                  <div className="pt-2 border-t border-zinc-800/80 px-2 py-1 text-[10px] font-bold text-zinc-400 uppercase tracking-wider flex items-center justify-between">
+                    <span>Your Pods</span>
+                    <span>({pods.length}/3)</span>
                   </div>
 
                   <div className="space-y-1 my-1">
-                    {pods.map((p) => {
-                      const isSelected = p.id === activePod?.id;
-                      return (
-                        <button
-                          key={p.id}
-                          onClick={() => {
-                            setActivePodId(p.id);
-                            setPodDropdownOpen(false);
-                          }}
-                          className={`w-full flex items-center justify-between p-2 rounded-xl text-left text-xs transition-colors cursor-pointer ${
-                            isSelected
-                              ? 'bg-orange-500/10 text-orange-400 font-bold border border-orange-500/30'
-                              : 'text-zinc-300 hover:bg-zinc-800/80'
-                          }`}
-                        >
-                          <div className="flex items-center gap-2 truncate">
-                            <span>{p.emoji}</span>
-                            <span className="truncate">{p.name}</span>
-                          </div>
-                          {isSelected && <Check className="w-3.5 h-3.5 shrink-0" />}
-                        </button>
-                      );
-                    })}
+                    {pods.length === 0 ? (
+                      <div className="p-2 text-[11px] text-zinc-500 text-center">
+                        No pods joined yet
+                      </div>
+                    ) : (
+                      pods.map((p) => {
+                        const isSelected = activePodId !== 'me' && p.id === activePod?.id;
+                        return (
+                          <button
+                            key={p.id}
+                            onClick={() => {
+                              setActivePodId(p.id);
+                              setPodDropdownOpen(false);
+                            }}
+                            className={`w-full flex items-center justify-between p-2 rounded-xl text-left text-xs transition-colors cursor-pointer ${
+                              isSelected
+                                ? 'bg-orange-500/10 text-orange-400 font-bold border border-orange-500/30'
+                                : 'text-zinc-300 hover:bg-zinc-800/80'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2 truncate">
+                              <span>{p.emoji}</span>
+                              <span className="truncate">{p.name}</span>
+                            </div>
+                            {isSelected && <Check className="w-3.5 h-3.5 shrink-0 text-orange-400" />}
+                          </button>
+                        );
+                      })
+                    )}
                   </div>
 
                   <div className="pt-2 border-t border-zinc-800/80">

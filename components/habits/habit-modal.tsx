@@ -20,7 +20,7 @@ export function HabitModal({
   onClose,
   habitToEdit,
 }: HabitModalProps) {
-  const { createHabit, updateHabit, pods } = useEmber();
+  const { createHabit, updateHabit, pods, activePod, activePodId } = useEmber();
 
   const [title, setTitle] = useState('');
   const [emoji, setEmoji] = useState('🔥');
@@ -48,10 +48,10 @@ export function HabitModal({
       setSelectedDays([1, 2, 3, 4, 5]);
       setTimesPerWeek(4);
       setReminderTime('08:00 AM');
-      setIsPrivate(false);
-      setSelectedPodIds(pods.map((p) => p.id));
+      setIsPrivate(activePodId === 'me');
+      setSelectedPodIds(activePodId !== 'me' && activePod ? [activePod.id] : []);
     }
-  }, [habitToEdit, isOpen, pods]);
+  }, [habitToEdit, isOpen, pods, activePod, activePodId]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

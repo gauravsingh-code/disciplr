@@ -12,6 +12,7 @@ import {
   Shield,
   Users,
   Plus,
+  MessageSquare,
 } from 'lucide-react';
 import { useEmber } from '@/context/ember-context';
 import { Avatar } from '@/components/ui/avatar';
@@ -46,6 +47,11 @@ export function Sidebar({
       label: 'Pod Feed',
       href: '/pod',
       icon: Flame,
+    },
+    {
+      label: 'Community Feed',
+      href: '/feed',
+      icon: MessageSquare,
     },
     {
       label: 'My Habits',

@@ -21,7 +21,9 @@ export default function PodPage() {
   const [inviteModalOpen, setInviteModalOpen] = useState(false);
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
 
-  if (!activePod) {
+  const currentPod = activePod || pods[0] || null;
+
+  if (!currentPod) {
     return (
       <div className="text-center py-12 space-y-4">
         <div className="w-16 h-16 rounded-3xl bg-zinc-900 border border-zinc-800 flex items-center justify-center mx-auto text-2xl">
@@ -52,7 +54,7 @@ export default function PodPage() {
       return log.userId === selectedMemberId;
     }
     // Check if the log belongs to any member of this active Pod
-    return activePod.members.some((m) => m.userId === log.userId);
+    return currentPod.members.some((m) => m.userId === log.userId);
   });
 
   return (
@@ -68,7 +70,7 @@ export default function PodPage() {
                 setSelectedMemberId(null);
               }}
               className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-                p.id === activePod.id
+                p.id === currentPod.id
                   ? 'bg-orange-500/20 text-orange-300 border border-orange-500/40 shadow-sm'
                   : 'bg-zinc-900 text-zinc-400 hover:text-zinc-200 border border-zinc-800'
               }`}
@@ -82,7 +84,7 @@ export default function PodPage() {
 
       {/* Pod Pulse Header */}
       <PodPulse
-        pod={activePod}
+        pod={currentPod}
         onOpenInvite={() => setInviteModalOpen(true)}
       />
 
@@ -99,7 +101,7 @@ export default function PodPage() {
           All Activity ({podFeedLogs.length})
         </button>
 
-        {activePod.members.map((member) => (
+        {currentPod.members.map((member) => (
           <button
             key={member.userId}
             onClick={() =>
