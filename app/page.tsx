@@ -34,7 +34,7 @@ export default function LandingPage() {
             <Flame className="w-5 h-5 text-white" />
           </div>
           <span className="text-xl font-extrabold tracking-tight bg-gradient-to-r from-zinc-100 to-zinc-300 bg-clip-text text-transparent">
-            Ember
+            Disciplr
           </span>
         </div>
 
@@ -62,7 +62,7 @@ export default function LandingPage() {
         {/* Pill Tag */}
         <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-orange-500/10 border border-orange-500/30 text-orange-400 text-xs font-bold mb-6 animate-slide-up shadow-sm">
           <Sparkles className="w-3.5 h-3.5" />
-          <span>A Social Habit Platform for Small Circles (3–8 People)</span>
+          <span>A Growth Network for Small Circles (3–8 People)</span>
         </div>
 
         {/* Hero Title */}
@@ -75,14 +75,14 @@ export default function LandingPage() {
 
         {/* Hero Subtitle */}
         <p className="mt-6 text-base sm:text-xl text-zinc-400 max-w-2xl leading-relaxed">
-          Proof of work over public noise. Check in with one tap, share lightweight proof with your closed Pod, and stay consistent with forgiving streak shields.
+          Proof of work over public noise. Check in with one tap, share lightweight proof with your Growth Network, and stay consistent with forgiving streak shields.
         </p>
 
         {/* CTA Buttons */}
         <div className="mt-8 flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
           <Link href="/signup" className="w-full sm:w-auto">
             <Button variant="glow" size="lg" fullWidth rightIcon={<ArrowRight className="w-5 h-5" />}>
-              Join or Create a Pod
+              Join Growth Network
             </Button>
           </Link>
           <Link href="/login" className="w-full sm:w-auto">
@@ -204,9 +204,9 @@ export default function LandingPage() {
         <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <Flame className="w-4 h-4 text-orange-500" />
-            <span className="font-bold text-zinc-400">Ember • Phase 1 MVP</span>
+            <span className="font-bold text-zinc-400">Disciplr • Growth Network</span>
           </div>
-          <p>© 2026 Ember Social Habit Platform. All habits private by default.</p>
+          <p>© 2026 Disciplr Growth Network. All habits private by default.</p>
         </div>
       </footer>
     </div>

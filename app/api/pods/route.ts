@@ -83,7 +83,7 @@ export async function POST(request: Request) {
     }
 
     const supabase = await createClient();
-    const inviteCode = `EMBER-${Math.random().toString(36).substring(2, 6).toUpperCase()}-08`;
+    const inviteCode = `DISCIPLR-${Math.random().toString(36).substring(2, 6).toUpperCase()}-08`;
 
     // 1. Create Pod
     const { data: newPod, error: podError } = await supabase

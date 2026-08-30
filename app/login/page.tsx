@@ -82,14 +82,14 @@ export default function LoginPage() {
               <Flame className="w-6 h-6 text-white" />
             </div>
             <span className="text-2xl font-black bg-gradient-to-r from-zinc-100 to-zinc-300 bg-clip-text text-transparent">
-              Ember
+              Disciplr
             </span>
           </Link>
           <h1 className="text-xl font-bold text-white tracking-tight">
-            Welcome back to your rituals
+            Welcome back to Disciplr
           </h1>
           <p className="text-xs text-zinc-400 mt-1">
-            Log in to check in with your Pod and protect your streaks.
+            Log in to check in with your Growth Network and protect your streaks.
           </p>
         </div>
 

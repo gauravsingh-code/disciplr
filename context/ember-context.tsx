@@ -430,7 +430,7 @@ export function EmberProvider({ children }: { children: React.ReactNode }) {
       name: data.name,
       description: data.description,
       emoji: data.emoji || '🔥',
-      inviteCode: `EMBER-${Math.random().toString(36).substring(2, 6).toUpperCase()}-08`,
+      inviteCode: `DISCIPLR-${Math.random().toString(36).substring(2, 6).toUpperCase()}-08`,
       creatorId: user.id,
       maxMembers: 8,
       createdAt: new Date().toISOString(),

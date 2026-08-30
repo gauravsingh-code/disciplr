@@ -34,8 +34,8 @@ export function PodInviteModal({
   const [newDescription, setNewDescription] = useState('');
 
   const inviteLink = targetPod
-    ? `https://ember.app/join/${targetPod.inviteCode}`
-    : 'https://ember.app/join';
+    ? `https://disciplr.app/join/${targetPod.inviteCode}`
+    : 'https://disciplr.app/join';
 
   const handleCopy = () => {
     navigator.clipboard.writeText(inviteLink);
@@ -77,10 +77,10 @@ export function PodInviteModal({
       title={
         <div className="flex items-center gap-2">
           <Users className="w-5 h-5 text-orange-400" />
-          <span>Pods & Circles</span>
+          <span>Growth Network Circles</span>
         </div>
       }
-      description="Ember pods are intentionally small (3–8 people) for high trust and zero performance pressure."
+      description="Disciplr Growth Networks are intentionally small (3–8 people) for high trust and zero performance pressure."
     >
       {/* Tabs */}
       <div className="flex bg-zinc-800/80 p-1 rounded-xl mb-4 border border-zinc-700/60">

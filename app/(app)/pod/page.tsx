@@ -29,9 +29,9 @@ export default function PodPage() {
         <div className="w-16 h-16 rounded-3xl bg-zinc-900 border border-zinc-800 flex items-center justify-center mx-auto text-2xl">
           👥
         </div>
-        <h2 className="text-xl font-bold text-zinc-100">No Active Pods</h2>
+        <h2 className="text-xl font-bold text-zinc-100">No Active Growth Networks</h2>
         <p className="text-xs text-zinc-400 max-w-sm mx-auto">
-          Ember is designed for small circles of 3–8 people. Create or join a pod to start sharing accountability.
+          Disciplr is designed for small circles of 3–8 people. Create or join a Growth Network to start sharing accountability.
         </p>
         <Button
           variant="primary"

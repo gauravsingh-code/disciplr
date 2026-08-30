@@ -85,11 +85,11 @@ export default function OnboardingPage() {
               <Flame className="w-6 h-6 text-white" />
             </div>
             <span className="text-2xl font-black bg-gradient-to-r from-zinc-100 to-zinc-300 bg-clip-text text-transparent">
-              Ember
+              Disciplr
             </span>
           </div>
           <p className="text-xs text-zinc-400">
-            Build habits with small, trusted accountability circles.
+            Build habits with small, trusted Growth Networks.
           </p>
 
           {/* Stepper Indicator */}
@@ -166,7 +166,7 @@ export default function OnboardingPage() {
                       Age Confirmation (16+)
                     </span>
                     <p className="text-[11px] text-zinc-400 mt-0.5">
-                      I confirm I am at least 16 years old to use Ember and participate in photo check-ins.
+                      I confirm I am at least 16 years old to use Disciplr and participate in photo check-ins.
                     </p>
                   </div>
                 </label>

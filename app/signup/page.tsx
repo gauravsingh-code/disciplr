@@ -101,14 +101,14 @@ export default function SignupPage() {
               <Flame className="w-6 h-6 text-white" />
             </div>
             <span className="text-2xl font-black bg-gradient-to-r from-zinc-100 to-zinc-300 bg-clip-text text-transparent">
-              Ember
+              Disciplr
             </span>
           </Link>
           <h1 className="text-xl font-bold text-white tracking-tight">
             Create your account
           </h1>
           <p className="text-xs text-zinc-400 mt-1">
-            Join small, private Pods and build daily momentum without public noise.
+            Join your Growth Network and build daily momentum without public noise.
           </p>
         </div>
 

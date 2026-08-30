@@ -56,7 +56,7 @@ export function MilestoneCelebration() {
 
         {/* Pod Recognition Note */}
         <div className="p-3 rounded-xl bg-zinc-800/60 border border-zinc-700/60 text-xs text-zinc-400">
-          🎉 This milestone has been celebrated in your Pod feed!
+          🎉 This milestone has been celebrated in your Growth Network feed!
         </div>
 
         {/* Action Buttons */}

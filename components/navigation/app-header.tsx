@@ -48,7 +48,7 @@ export function AppHeader({
               <Flame className="w-4.5 h-4.5 text-white" />
             </div>
             <span className="text-lg font-black tracking-tight bg-gradient-to-r from-zinc-100 to-zinc-300 bg-clip-text text-transparent hidden sm:inline-block">
-              Ember
+              Disciplr
             </span>
           </Link>
 

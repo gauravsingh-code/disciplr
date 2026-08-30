@@ -14,9 +14,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Ember — Social Habit-Building Platform",
+  title: "Disciplr — Growth Network",
   description:
-    "Build daily habits inside small, trusted Pods (3–8 people) with 1-tap check-in, lightweight proof, and forgiving streak shields.",
+    "A Growth Network for building daily habits inside small, trusted Pods (3–8 people) with 1-tap check-in, lightweight proof, and forgiving streak shields.",
 };
 
 export default function RootLayout({
