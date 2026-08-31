@@ -203,7 +203,7 @@ export function ActivityCalendar({
   };
 
   return (
-    <div className="glass-card rounded-3xl p-5 sm:p-6 space-y-5">
+    <div className="glass-card rounded-3xl p-4 sm:p-6 space-y-5 overflow-hidden max-w-full">
       {/* Header with Title and Controls */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-zinc-800/80">
         <div>

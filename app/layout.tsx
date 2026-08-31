@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { EmberProvider } from "@/context/ember-context";
@@ -17,6 +17,13 @@ export const metadata: Metadata = {
   title: "Disciplr — Growth Network",
   description:
     "A Growth Network for building daily habits inside small, trusted Pods (3–8 people) with 1-tap check-in, lightweight proof, and forgiving streak shields.",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({

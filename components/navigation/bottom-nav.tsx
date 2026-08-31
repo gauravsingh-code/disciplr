@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import { CheckCircle2, Flame, MessageSquare, Layers, UserCircle, Settings } from 'lucide-react';
 import { useEmber } from '@/context/ember-context';
 
-export function BottomNav() {
+export function BottomNav({ embedded = false }: { embedded?: boolean }) {
   const pathname = usePathname();
   const { completedTodayHabitIds, habits } = useEmber();
 
@@ -43,7 +43,13 @@ export function BottomNav() {
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-zinc-950/90 backdrop-blur-lg border-t border-zinc-800/80 max-w-md mx-auto sm:max-w-none">
+    <nav
+      className={
+        embedded
+          ? 'sticky bottom-0 left-0 right-0 z-30 bg-zinc-950/95 backdrop-blur-lg border-t border-zinc-800/80 w-full shrink-0'
+          : 'fixed bottom-0 left-0 right-0 z-40 bg-zinc-950/90 backdrop-blur-lg border-t border-zinc-800/80 max-w-md mx-auto sm:max-w-none'
+      }
+    >
       <div className="max-w-md mx-auto px-4 h-16 flex items-center justify-around">
         {navItems.map((item) => {
           const isActive =

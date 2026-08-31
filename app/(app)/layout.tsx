@@ -72,20 +72,20 @@ export default function AppLayout({
       <div className="flex-1 flex justify-center w-full">
         {previewMode === 'mobile' ? (
           /* Mobile Simulation Container */
-          <div className="py-6 px-3 flex justify-center items-start w-full">
-            <div className="w-full max-w-[420px] min-h-[820px] bg-zinc-950 border-[6px] border-zinc-800 rounded-[40px] shadow-2xl shadow-black/80 overflow-hidden relative flex flex-col">
+          <div className="py-3 sm:py-6 px-2 sm:px-3 flex justify-center items-start w-full">
+            <div className="w-full max-w-[420px] h-[calc(100dvh-5rem)] max-h-[844px] min-h-[520px] bg-zinc-950 border-2 sm:border-[6px] border-zinc-800 rounded-3xl sm:rounded-[40px] shadow-2xl shadow-black/80 overflow-hidden relative flex flex-col">
               {/* Dynamic Island / Camera Notch */}
               <div className="w-full flex justify-center pt-2 pb-1 bg-zinc-950 shrink-0 select-none">
-                <div className="w-24 h-4 bg-zinc-800 rounded-full" />
+                <div className="w-24 h-3.5 sm:h-4 bg-zinc-800 rounded-full" />
               </div>
 
               {/* Scrollable Viewport with key={pathname} to force re-render on back navigation */}
-              <div key={pathname} className="flex-1 overflow-y-auto pb-20 p-4">
+              <div key={pathname} className="flex-1 overflow-y-auto p-3.5 sm:p-4">
                 {children}
               </div>
 
-              {/* Bottom Nav inside mobile frame */}
-              <BottomNav />
+              {/* Bottom Nav cleanly embedded inside mobile frame */}
+              <BottomNav embedded={true} />
             </div>
           </div>
         ) : (

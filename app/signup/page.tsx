@@ -76,7 +76,7 @@ export default function SignupPage() {
         });
       }
 
-      router.push('/onboarding');
+      router.push('/today');
       router.refresh();
     } catch (err: any) {
       setErrorMessage(err.message || 'Failed to create account.');
@@ -218,7 +218,7 @@ export default function SignupPage() {
               isLoading={isLoading}
               rightIcon={<ArrowRight className="w-4 h-4" />}
             >
-              Sign Up & Continue
+              Create Account
             </Button>
           </form>
         </div>
