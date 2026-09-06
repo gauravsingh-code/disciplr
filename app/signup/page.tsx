@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { signupApi } from '@/lib/auth-client';
+import { signupApi, uploadProfileImageApi } from '@/lib/auth-client';
 import { useEmber } from '@/context/ember-context';
 import {
   Flame,
@@ -16,6 +16,9 @@ import {
   AlertCircle,
   ShieldCheck,
   FileText,
+  Camera,
+  X,
+  UploadCloud,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -37,17 +40,40 @@ export default function SignupPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [description, setDescription] = useState('');
+  const [profileImageFile, setProfileImageFile] = useState<File | null>(null);
+  const [profileImagePreview, setProfileImagePreview] = useState<string>('');
   const [ageConfirmed, setAgeConfirmed] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 10 * 1024 * 1024) {
+        setErrorMessage('Profile image must be smaller than 10MB.');
+        return;
+      }
+      setProfileImageFile(file);
+      const previewUrl = URL.createObjectURL(file);
+      setProfileImagePreview(previewUrl);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setProfileImageFile(null);
+    if (profileImagePreview) {
+      URL.revokeObjectURL(profileImagePreview);
+      setProfileImagePreview('');
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
 
     if (!ageConfirmed) {
-      setErrorMessage('You must confirm you are at least 16 years old to use Ember.');
+      setErrorMessage('You must confirm you are at least 16 years old to use Disciplr.');
       return;
     }
 
@@ -59,11 +85,25 @@ export default function SignupPage() {
     setIsLoading(true);
 
     try {
+      let uploadedProfileImgUrl: string | undefined = undefined;
+
+      // 1. Upload profile image to storage if selected
+      if (profileImageFile) {
+        try {
+          uploadedProfileImgUrl = await uploadProfileImageApi(profileImageFile);
+        } catch (uploadErr: any) {
+          console.warn('Profile image storage upload error:', uploadErr);
+        }
+      }
+
+      // 2. Call Signup API with profile_img
       const response = await signupApi({
         name: name.trim(),
         email: email.trim(),
         password,
         description: description.trim() || undefined,
+        profile_img: uploadedProfileImgUrl,
+        avatar_url: uploadedProfileImgUrl,
       });
 
       if (response.user) {
@@ -72,6 +112,7 @@ export default function SignupPage() {
           name: response.user.name,
           username: response.user.name.toLowerCase().replace(/\s+/g, '_'),
           email: response.user.email,
+          avatar: uploadedProfileImgUrl || response.user.avatar_url || response.user.profile_img || undefined,
           ageVerified: true,
         });
       }
@@ -122,6 +163,61 @@ export default function SignupPage() {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Profile Picture Upload */}
+            <div className="flex flex-col items-center justify-center pb-2">
+              <div className="relative group">
+                <div className="w-20 h-20 rounded-full bg-zinc-900 border-2 border-dashed border-zinc-700 hover:border-orange-500/80 transition-colors overflow-hidden flex items-center justify-center shadow-lg">
+                  {profileImagePreview ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={profileImagePreview}
+                      alt="Profile preview"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex flex-col items-center justify-center text-zinc-500 group-hover:text-orange-400 transition-colors">
+                      <Camera className="w-7 h-7 mb-0.5" />
+                      <span className="text-[9px] font-semibold uppercase tracking-wider">Photo</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Upload Action Label / Input */}
+                <label className="absolute inset-0 cursor-pointer rounded-full flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <UploadCloud className="w-6 h-6 text-white drop-shadow-md" />
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageChange}
+                    className="hidden"
+                  />
+                </label>
+
+                {/* Remove Image Button if selected */}
+                {profileImagePreview && (
+                  <button
+                    type="button"
+                    onClick={handleRemoveImage}
+                    className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-rose-600 hover:bg-rose-500 text-white flex items-center justify-center shadow-md cursor-pointer transition-transform hover:scale-110"
+                    title="Remove image"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+
+              <label className="mt-2 text-xs text-orange-400 hover:text-orange-300 font-semibold cursor-pointer transition-colors">
+                <span>{profileImagePreview ? 'Change Profile Picture' : 'Upload Profile Picture (Optional)'}</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                  className="hidden"
+                />
+              </label>
+              <span className="text-[10px] text-zinc-500">Stored as profile_img in your account</span>
+            </div>
+
             <div>
               <label className="block text-xs font-semibold text-zinc-300 mb-1.5 flex items-center gap-1.5">
                 <User className="w-3.5 h-3.5 text-orange-400" />

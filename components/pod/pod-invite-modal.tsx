@@ -11,18 +11,33 @@ interface PodInviteModalProps {
   isOpen: boolean;
   onClose: () => void;
   pod?: Pod | null;
+  initialMode?: 'invite_only' | 'join_create';
 }
 
 export function PodInviteModal({
   isOpen,
   onClose,
   pod,
+  initialMode,
 }: PodInviteModalProps) {
   const { createPod, joinPodByCode, activePod } = useEmber();
   const targetPod = pod || activePod;
 
   const [copied, setCopied] = useState(false);
-  const [tab, setTab] = useState<'invite' | 'join' | 'create'>('invite');
+  const [tab, setTab] = useState<'invite' | 'join' | 'create'>(
+    initialMode === 'invite_only' ? 'invite' : 'join'
+  );
+
+  // Sync tab whenever modal opens or initialMode changes
+  React.useEffect(() => {
+    if (isOpen) {
+      if (initialMode === 'invite_only') {
+        setTab('invite');
+      } else if (initialMode === 'join_create') {
+        setTab('join');
+      }
+    }
+  }, [isOpen, initialMode]);
 
   // Join State
   const [joinCode, setJoinCode] = useState('');
@@ -43,10 +58,10 @@ export function PodInviteModal({
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleJoin = (e: React.FormEvent) => {
+  const handleJoin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!joinCode.trim()) return;
-    const res = joinPodByCode(joinCode);
+    const res = await joinPodByCode(joinCode);
     setJoinStatus(res);
     if (res.success) {
       setTimeout(() => {
@@ -77,47 +92,46 @@ export function PodInviteModal({
       title={
         <div className="flex items-center gap-2">
           <Users className="w-5 h-5 text-orange-400" />
-          <span>Growth Network Circles</span>
+          <span>
+            {initialMode === 'invite_only'
+              ? 'Invite Friends to Pod'
+              : 'Join or Create a Pod'}
+          </span>
         </div>
       }
-      description="Disciplr Growth Networks are intentionally small (3–8 people) for high trust and zero performance pressure."
+      description={
+        initialMode === 'invite_only'
+          ? 'Share your private invite link with friends to build accountability together.'
+          : 'Disciplr Growth Networks are intentionally small (3–8 people) for high trust and zero performance pressure.'
+      }
     >
       {/* Tabs */}
-      <div className="flex bg-zinc-800/80 p-1 rounded-xl mb-4 border border-zinc-700/60">
-        <button
-          type="button"
-          onClick={() => setTab('invite')}
-          className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-            tab === 'invite'
-              ? 'bg-zinc-900 text-orange-400 shadow-sm'
-              : 'text-zinc-400 hover:text-zinc-200'
-          }`}
-        >
-          Invite Friends
-        </button>
-        <button
-          type="button"
-          onClick={() => setTab('join')}
-          className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-            tab === 'join'
-              ? 'bg-zinc-900 text-orange-400 shadow-sm'
-              : 'text-zinc-400 hover:text-zinc-200'
-          }`}
-        >
-          Join via Code
-        </button>
-        <button
-          type="button"
-          onClick={() => setTab('create')}
-          className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-            tab === 'create'
-              ? 'bg-zinc-900 text-orange-400 shadow-sm'
-              : 'text-zinc-400 hover:text-zinc-200'
-          }`}
-        >
-          Create New Pod
-        </button>
-      </div>
+      {initialMode !== 'invite_only' && (
+        <div className="flex bg-zinc-800/80 p-1 rounded-xl mb-4 border border-zinc-700/60">
+          <button
+            type="button"
+            onClick={() => setTab('join')}
+            className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+              tab === 'join'
+                ? 'bg-zinc-900 text-orange-400 shadow-sm'
+                : 'text-zinc-400 hover:text-zinc-200'
+            }`}
+          >
+            Join via Code
+          </button>
+          <button
+            type="button"
+            onClick={() => setTab('create')}
+            className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+              tab === 'create'
+                ? 'bg-zinc-900 text-orange-400 shadow-sm'
+                : 'text-zinc-400 hover:text-zinc-200'
+            }`}
+          >
+            Create New Pod
+          </button>
+        </div>
+      )}
 
       {/* Tab 1: Invite */}
       {tab === 'invite' && targetPod && (

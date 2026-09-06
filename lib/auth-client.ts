@@ -2,6 +2,8 @@ export interface AuthResponseUser {
   id: string;
   name: string;
   email: string;
+  avatar_url?: string | null;
+  profile_img?: string | null;
   description?: string | null;
   is_active?: boolean;
   created_at?: string;
@@ -31,10 +33,29 @@ export async function loginApi(credentials: {
   return data;
 }
 
+export async function uploadProfileImageApi(file: File): Promise<string> {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('bucket', 'avatars');
+
+  const res = await fetch('/api/upload', {
+    method: 'POST',
+    body: formData,
+  });
+
+  const data = await res.json();
+  if (!res.ok || !data.url) {
+    throw new Error(data.error || 'Failed to upload profile image');
+  }
+  return data.url;
+}
+
 export async function signupApi(params: {
   name: string;
   email: string;
   password: string;
+  profile_img?: string;
+  avatar_url?: string;
   description?: string;
 }): Promise<AuthApiResponse> {
   const res = await fetch('/api/auth/signup', {

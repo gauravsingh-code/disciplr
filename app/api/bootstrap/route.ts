@@ -14,7 +14,7 @@ export async function GET() {
     // 1. Fetch User Record
     const { data: user, error: userError } = await supabase
       .from('users')
-      .select('id, name, email, avatar_url, description, is_active, created_at')
+      .select('*')
       .eq('id', session.userId)
       .maybeSingle();
 
@@ -181,7 +181,7 @@ export async function GET() {
         name: user.name,
         username: user.name.toLowerCase().replace(/\s+/g, '_'),
         email: user.email,
-        avatar: user.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80',
+        avatar: user.profile_img || user.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80',
         ageVerified: true,
         activePodId: pods[0]?.id || undefined,
         streakShields,

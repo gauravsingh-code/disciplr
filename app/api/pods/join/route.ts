@@ -19,12 +19,16 @@ export async function POST(request: Request) {
     const supabase = await createClient();
     const cleanCode = inviteCode.trim().toUpperCase();
 
-    // 1. Find Pod by code
-    const { data: pod, error: findError } = await supabase
+    // 1. Find Pod by code (check UUID syntax before searching id)
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cleanCode);
+
+    const query = supabase
       .from('pods')
-      .select('id, name, description, emoji, invite_code, creator_id, max_members')
-      .or(`invite_code.eq.${cleanCode},id.eq.${cleanCode}`)
-      .maybeSingle();
+      .select('id, name, description, emoji, invite_code, creator_id, max_members, created_at');
+
+    const { data: pod, error: findError } = isUUID
+      ? await query.or(`invite_code.eq.${cleanCode},id.eq.${cleanCode}`).maybeSingle()
+      : await query.eq('invite_code', cleanCode).maybeSingle();
 
     if (findError || !pod) {
       return NextResponse.json({ error: 'Invalid invite code or Pod not found' }, { status: 404 });
@@ -62,9 +66,21 @@ export async function POST(request: Request) {
       role: 'member',
     });
 
+    const formattedPod = {
+      id: pod.id,
+      name: pod.name,
+      description: pod.description || '',
+      emoji: pod.emoji || '🌅',
+      inviteCode: pod.invite_code,
+      creatorId: pod.creator_id,
+      maxMembers: pod.max_members || 8,
+      createdAt: pod.created_at,
+      members: [],
+    };
+
     return NextResponse.json({
       message: `Successfully joined ${pod.name}!`,
-      pod,
+      pod: formattedPod,
     });
   } catch (error: any) {
     return NextResponse.json(

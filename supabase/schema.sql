@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS public.users (
     email VARCHAR(255) NOT NULL UNIQUE,
     encrypted_password VARCHAR(200) NOT NULL,
     avatar_url TEXT,
+    profile_img TEXT,
     description TEXT,
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),

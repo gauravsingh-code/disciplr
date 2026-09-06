@@ -28,8 +28,6 @@ interface EmberContextType {
   posts: Post[];
   completedTodayHabitIds: string[];
   activeMilestone: MilestoneBadge | null;
-  previewMode: 'mobile' | 'responsive';
-  setPreviewMode: (mode: 'mobile' | 'responsive') => void;
   setActivePodId: (podId: string) => void;
   toggleCheckIn: (
     habitId: string,
@@ -47,7 +45,7 @@ interface EmberContextType {
   deletePost: (postId: string) => Promise<void>;
   refreshPosts: () => Promise<void>;
   createPod: (data: { name: string; description: string; emoji: string }) => Pod;
-  joinPodByCode: (code: string) => { success: boolean; message: string; pod?: Pod };
+  joinPodByCode: (code: string) => Promise<{ success: boolean; message: string; pod?: Pod }>;
   leavePod: (podId: string) => void;
   removePodMember: (podId: string, memberUserId: string) => void;
   updateUserProfile: (updates: Partial<UserProfile>) => void;
@@ -69,7 +67,6 @@ export function EmberProvider({ children }: { children: React.ReactNode }) {
   const [completedTodayHabitIds, setCompletedTodayHabitIds] = useState<string[]>([]);
   const [activePodId, setActivePodIdState] = useState<string>('');
   const [activeMilestone, setActiveMilestone] = useState<MilestoneBadge | null>(null);
-  const [previewMode, setPreviewMode] = useState<'mobile' | 'responsive'>('responsive');
   const [isLoaded, setIsLoaded] = useState(false);
 
   const refreshPosts = async () => {
@@ -472,7 +469,7 @@ export function EmberProvider({ children }: { children: React.ReactNode }) {
     return newPod;
   };
 
-  const joinPodByCode = (code: string) => {
+  const joinPodByCode = async (code: string) => {
     const cleanCode = code.trim().toUpperCase();
     const found = pods.find(
       (p) => p.inviteCode.toUpperCase() === cleanCode || p.id === cleanCode
@@ -486,63 +483,42 @@ export function EmberProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
-    // Backend API Dispatch
-    fetch('/api/pods/join', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ inviteCode: cleanCode }),
-    })
-      .then((res) => res.json())
-      .then((resData) => {
-        if (resData.pod) {
-          setPods((prev) => {
-            if (prev.some((p) => p.id === resData.pod.id)) {
-              return prev.map((p) => (p.id === resData.pod.id ? resData.pod : p));
-            }
-            return [resData.pod, ...prev];
-          });
-          setActivePodIdState(resData.pod.id);
+    // 2. Dispatch to Backend API and await response
+    try {
+      const res = await fetch('/api/pods/join', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ inviteCode: cleanCode }),
+      });
+
+      const resData = await res.json();
+
+      if (!res.ok || !resData.pod) {
+        return {
+          success: false,
+          message: resData.error || 'Pod not found. Please verify your invite code.',
+        };
+      }
+
+      setPods((prev) => {
+        if (prev.some((p) => p.id === resData.pod.id)) {
+          return prev.map((p) => (p.id === resData.pod.id ? resData.pod : p));
         }
-      })
-      .catch(() => {});
+        return [resData.pod, ...prev];
+      });
+      setActivePodIdState(resData.pod.id);
 
-    // Fallback Simulated Join
-    const simulatedPod: Pod = {
-      id: `pod_invited_${Date.now()}`,
-      name: 'Sprint & Code Circle',
-      description: 'Joined via invite link. 4 members building daily focus habits.',
-      emoji: '🚀',
-      inviteCode: cleanCode,
-      creatorId: 'usr_sarah',
-      maxMembers: 8,
-      createdAt: new Date().toISOString(),
-      members: [
-        {
-          userId: 'usr_sarah',
-          name: 'Sarah Kim',
-          username: 'sarah_k',
-          avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&auto=format&fit=crop&q=80',
-          joinedAt: new Date().toISOString(),
-          role: 'creator',
-          checkedInToday: true,
-          currentStreak: 11,
-        },
-        {
-          userId: user.id,
-          name: user.name,
-          username: user.username,
-          avatar: user.avatar,
-          joinedAt: new Date().toISOString(),
-          role: 'member',
-          checkedInToday: completedTodayHabitIds.length > 0,
-          currentStreak: habits[0]?.currentStreak || 0,
-        },
-      ],
-    };
-
-    setPods((prev) => [simulatedPod, ...prev]);
-    setActivePodIdState(simulatedPod.id);
-    return { success: true, message: `Joined ${simulatedPod.name}!`, pod: simulatedPod };
+      return {
+        success: true,
+        message: resData.message || `Joined ${resData.pod.name}!`,
+        pod: resData.pod,
+      };
+    } catch (err: any) {
+      return {
+        success: false,
+        message: err?.message || 'Network error while joining pod.',
+      };
+    }
   };
 
   const leavePod = (podId: string) => {
@@ -738,8 +714,6 @@ export function EmberProvider({ children }: { children: React.ReactNode }) {
         posts,
         completedTodayHabitIds,
         activeMilestone,
-        previewMode,
-        setPreviewMode,
         setActivePodId,
         toggleCheckIn,
         addReaction,

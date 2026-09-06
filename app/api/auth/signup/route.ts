@@ -5,7 +5,8 @@ import { hashPassword, createSessionToken, setSessionCookie } from '@/utils/auth
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { name, email, password, description } = body
+    const { name, email, password, description, profile_img, avatar_url } = body
+    const finalProfileImg = profile_img || avatar_url || null
 
     if (!name || !email || !password) {
       return NextResponse.json(
@@ -43,18 +44,83 @@ export async function POST(request: Request) {
     // Hash password
     const encrypted_password = await hashPassword(password)
 
+    // Prepare insert payload
+    const userPayload: Record<string, any> = {
+      name: cleanName,
+      email: cleanEmail,
+      encrypted_password,
+      description: description || null,
+      is_active: true,
+    }
+
+    if (finalProfileImg) {
+      userPayload.profile_img = finalProfileImg
+      userPayload.avatar_url = finalProfileImg
+    }
+
     // Insert user into custom users table
-    const { data: newUser, error: insertError } = await supabase
+    let insertResult = await supabase
       .from('users')
-      .insert({
+      .insert(userPayload)
+      .select('id, name, email, avatar_url, profile_img, description, is_active, created_at')
+      .single()
+
+    // Fallback logic if a column (profile_img vs avatar_url) is not yet migrated in PostgreSQL
+    if (insertResult.error) {
+      console.warn('Signup insert with dual image columns failed, retrying with profile_img:', insertResult.error.message)
+      
+      const payloadProfileImgOnly = {
         name: cleanName,
         email: cleanEmail,
         encrypted_password,
         description: description || null,
         is_active: true,
-      })
-      .select('id, name, email, description, is_active, created_at')
-      .single()
+        ...(finalProfileImg ? { profile_img: finalProfileImg } : {}),
+      }
+
+      insertResult = await supabase
+        .from('users')
+        .insert(payloadProfileImgOnly)
+        .select()
+        .single()
+
+      if (insertResult.error) {
+        console.warn('Signup insert with profile_img failed, retrying with avatar_url:', insertResult.error.message)
+        const payloadAvatarUrlOnly = {
+          name: cleanName,
+          email: cleanEmail,
+          encrypted_password,
+          description: description || null,
+          is_active: true,
+          ...(finalProfileImg ? { avatar_url: finalProfileImg } : {}),
+        }
+
+        insertResult = await supabase
+          .from('users')
+          .insert(payloadAvatarUrlOnly)
+          .select()
+          .single()
+
+        if (insertResult.error) {
+          console.warn('Signup insert fallback to base fields:', insertResult.error.message)
+          const basePayload = {
+            name: cleanName,
+            email: cleanEmail,
+            encrypted_password,
+            description: description || null,
+            is_active: true,
+          }
+          insertResult = await supabase
+            .from('users')
+            .insert(basePayload)
+            .select()
+            .single()
+        }
+      }
+    }
+
+    const newUser = insertResult.data
+    const insertError = insertResult.error
 
     if (insertError || !newUser) {
       console.error('Signup DB error:', insertError)

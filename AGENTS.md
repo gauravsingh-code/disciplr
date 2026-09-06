@@ -1,3 +1,7 @@
+# Project Instructions & Guidelines
+
+Before starting any task or writing any code, ALWAYS read and adhere to [docs/project_instructions.md](file:///c:/all@gAurav/disciplr/docs/project_instructions.md). It contains essential project guidelines, rules, conventions, and architecture requirements for this repository.
+
 <!-- BEGIN:nextjs-agent-rules -->
 # This is NOT the Next.js you know
 

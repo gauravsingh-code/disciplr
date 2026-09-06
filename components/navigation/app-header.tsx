@@ -9,8 +9,6 @@ import { Button } from '@/components/ui/button';
 import {
   Flame,
   Shield,
-  Smartphone,
-  Monitor,
   ChevronDown,
   Plus,
   Users,
@@ -32,8 +30,6 @@ export function AppHeader({
     activePodId,
     pods,
     setActivePodId,
-    previewMode,
-    setPreviewMode,
   } = useEmber();
 
   const [podDropdownOpen, setPodDropdownOpen] = useState(false);
@@ -171,32 +167,6 @@ export function AppHeader({
               <span className="hidden sm:inline">Shields</span>
             </span>
           </button>
-
-          {/* Preview Viewport Switcher */}
-          <div className="hidden sm:flex items-center bg-zinc-900 border border-zinc-800 rounded-xl p-0.5">
-            <button
-              onClick={() => setPreviewMode('responsive')}
-              className={`p-1.5 rounded-lg text-xs transition-colors cursor-pointer ${
-                previewMode === 'responsive'
-                  ? 'bg-zinc-800 text-orange-400 shadow-sm'
-                  : 'text-zinc-500 hover:text-zinc-300'
-              }`}
-              title="Responsive Desktop View"
-            >
-              <Monitor className="w-3.5 h-3.5" />
-            </button>
-            <button
-              onClick={() => setPreviewMode('mobile')}
-              className={`p-1.5 rounded-lg text-xs transition-colors cursor-pointer ${
-                previewMode === 'mobile'
-                  ? 'bg-zinc-800 text-orange-400 shadow-sm'
-                  : 'text-zinc-500 hover:text-zinc-300'
-              }`}
-              title="Mobile Device Simulation Frame"
-            >
-              <Smartphone className="w-3.5 h-3.5" />
-            </button>
-          </div>
         </div>
       </div>
     </header>

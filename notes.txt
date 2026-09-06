@@ -1,3 +1,36 @@
+1. Next.js has 3 runtimes
+- Nodejs runtimes (Server)
+- Edge runtimes (Server/Edge locations) : 
+    The Edge Runtime is a lightweight, ultra-fast JavaScript environment based on standard Web APIs (similar to modern browser engine standards like V8), rather than full Node.js.
+
+    How it runs: Runs globally distributed in hundreds of data centers worldwide close to the end user (e.g., Vercel Edge Network, Cloudflare Workers).
+    Features:
+    Ultra-low cold starts: Starts in sub-milliseconds (0–5ms) compared to 200–800ms for standard Node.js serverless functions.
+    No Node.js core modules: You CANNOT use fs, path, child_process, or Node's internal crypto.
+    Only standard Web APIs are available: fetch, Request, Response, Web Cryptography API (crypto.subtle), TextEncoder, Headers, URL.
+    When Next.js uses it:
+    Next.js Middleware (middleware.ts) MUST run on Edge Runtime.
+    You can also opt-in for any Route Handler or page by adding:
+    typescript
+    export const runtime = 'edge'
+
+- Client runtime (Browse)
+    This is code executed directly inside the user's browser (Chrome, Safari, Firefox).
+
+    Features:
+    Runs any React components marked with 'use client'.
+    Has access to browser APIs: window, document, localStorage, sessionStorage, 
+       DOM events, React hooks (useState, useEffect).
+    Has zero access to server environment variables (unless prefixed with NEXT_PUBLIC_) or server databases.
+
+
+2. 
+
+
+
+
+
+
 
 npm run dev
 

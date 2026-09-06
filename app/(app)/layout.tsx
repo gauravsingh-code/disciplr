@@ -19,7 +19,6 @@ export default function AppLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const { previewMode } = useEmber();
 
   // Guard against browser back-forward cache (bfcache) after signout
   useEffect(() => {
@@ -48,6 +47,7 @@ export default function AppLayout({
   const [proofTargetHabit, setProofTargetHabit] = useState<Habit | null>(null);
 
   const [podModalOpen, setPodModalOpen] = useState(false);
+  const [podModalMode, setPodModalMode] = useState<'invite_only' | 'join_create'>('invite_only');
   const [shieldModalOpen, setShieldModalOpen] = useState(false);
 
   const handleOpenEditHabit = (habit: Habit) => {
@@ -65,56 +65,39 @@ export default function AppLayout({
       {/* Top Header */}
       <AppHeader
         onOpenShieldModal={() => setShieldModalOpen(true)}
-        onOpenPodModal={() => setPodModalOpen(true)}
+        onOpenPodModal={() => {
+          setPodModalMode('join_create');
+          setPodModalOpen(true);
+        }}
       />
 
       {/* Main Content Area */}
       <div className="flex-1 flex justify-center w-full">
-        {previewMode === 'mobile' ? (
-          /* Mobile Simulation Container */
-          <div className="py-3 sm:py-6 px-2 sm:px-3 flex justify-center items-start w-full">
-            <div className="w-full max-w-[420px] h-[calc(100dvh-5rem)] max-h-[844px] min-h-[520px] bg-zinc-950 border-2 sm:border-[6px] border-zinc-800 rounded-3xl sm:rounded-[40px] shadow-2xl shadow-black/80 overflow-hidden relative flex flex-col">
-              {/* Dynamic Island / Camera Notch */}
-              <div className="w-full flex justify-center pt-2 pb-1 bg-zinc-950 shrink-0 select-none">
-                <div className="w-24 h-3.5 sm:h-4 bg-zinc-800 rounded-full" />
-              </div>
+        <div className="flex-1 flex max-w-6xl mx-auto w-full">
+          {/* Desktop Sidebar */}
+          <Sidebar
+            onOpenHabitModal={() => {
+              setHabitToEdit(null);
+              setHabitModalOpen(true);
+            }}
+            onOpenPodModal={() => {
+              setPodModalMode('invite_only');
+              setPodModalOpen(true);
+            }}
+            onOpenShieldModal={() => setShieldModalOpen(true)}
+          />
 
-              {/* Scrollable Viewport with key={pathname} to force re-render on back navigation */}
-              <div key={pathname} className="flex-1 overflow-y-auto p-3.5 sm:p-4">
-                {children}
-              </div>
-
-              {/* Bottom Nav cleanly embedded inside mobile frame */}
-              <BottomNav embedded={true} />
-            </div>
-          </div>
-        ) : (
-          /* Responsive Desktop & Mobile View */
-          <div className="flex-1 flex max-w-6xl mx-auto w-full">
-            {/* Desktop Sidebar */}
-            <Sidebar
-              onOpenHabitModal={() => {
-                setHabitToEdit(null);
-                setHabitModalOpen(true);
-              }}
-              onOpenPodModal={() => setPodModalOpen(true)}
-              onOpenShieldModal={() => setShieldModalOpen(true)}
-            />
-
-            {/* Main Viewport with key={pathname} to force re-render on back navigation */}
-            <main key={pathname} className="flex-1 p-4 sm:p-6 lg:p-8 max-w-3xl pb-24 md:pb-12">
-              {children}
-            </main>
-          </div>
-        )}
+          {/* Main Viewport */}
+          <main key={pathname} className="flex-1 p-4 sm:p-6 lg:p-8 max-w-3xl pb-24 md:pb-12">
+            {children}
+          </main>
+        </div>
       </div>
 
-      {/* Mobile Bottom Nav (Visible on small screens in responsive mode) */}
-      {previewMode === 'responsive' && (
-        <div className="md:hidden">
-          <BottomNav />
-        </div>
-      )}
+      {/* Mobile Bottom Nav (Visible on mobile screens) */}
+      <div className="md:hidden">
+        <BottomNav />
+      </div>
 
       {/* Global Modals */}
       <HabitModal
@@ -138,6 +121,7 @@ export default function AppLayout({
       <PodInviteModal
         isOpen={podModalOpen}
         onClose={() => setPodModalOpen(false)}
+        initialMode={podModalMode}
       />
 
       <StreakShieldModal

@@ -58,11 +58,11 @@ export function Sidebar({
       href: '/habits',
       icon: Layers,
     },
-    {
-      label: 'Profile & Badges',
-      href: '/profile',
-      icon: UserCircle,
-    },
+    // {
+    //   label: 'Profile & Badges',
+    //   href: '/profile',
+    //   icon: UserCircle,
+    // },
     {
       label: 'Settings & Privacy',
       href: '/settings',
@@ -88,17 +88,15 @@ export function Sidebar({
               <Link
                 key={link.href}
                 href={link.href}
-                className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
-                  isActive
-                    ? 'bg-gradient-to-r from-orange-500/15 to-amber-500/10 text-orange-300 font-semibold border border-orange-500/25 shadow-sm'
-                    : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-900/80'
-                }`}
+                className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${isActive
+                  ? 'bg-gradient-to-r from-orange-500/15 to-amber-500/10 text-orange-300 font-semibold border border-orange-500/25 shadow-sm'
+                  : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-900/80'
+                  }`}
               >
                 <div className="flex items-center gap-3">
                   <Icon
-                    className={`w-4 h-4 ${
-                      isActive ? 'text-orange-400' : 'text-zinc-400'
-                    }`}
+                    className={`w-4 h-4 ${isActive ? 'text-orange-400' : 'text-zinc-400'
+                      }`}
                   />
                   <span>{link.label}</span>
                 </div>
@@ -144,7 +142,7 @@ export function Sidebar({
         )}
 
         {/* Streak Shield Card */}
-        <div
+        {/* <div
           onClick={onOpenShieldModal}
           className="p-3.5 rounded-2xl bg-gradient-to-br from-indigo-950/40 to-zinc-900 border border-indigo-500/20 hover:border-indigo-500/40 transition-all cursor-pointer group"
         >
@@ -160,7 +158,7 @@ export function Sidebar({
           <p className="text-[11px] text-zinc-400 leading-relaxed group-hover:text-zinc-300">
             Guilt-free forgiveness: auto-applies on missed days to protect your momentum.
           </p>
-        </div>
+        </div> */}
       </div>
 
       {/* User Mini Profile */}

@@ -37,7 +37,7 @@ export async function GET() {
 
     const pods = (memberships || [])
       .map((m: any) => m.pod)
-      .filter(Boolean)
+      .filter(Boolean)  
       .map((p: any) => ({
         id: p.id,
         name: p.name,

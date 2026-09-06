@@ -150,7 +150,7 @@ export default function LoginPage() {
               isLoading={isLoading}
               rightIcon={<ArrowRight className="w-4 h-4" />}
             >
-              Sign In to Ember
+              Sign In to Disciplr
             </Button>
           </form>
 
