@@ -13,6 +13,7 @@ const PROTECTED_ROUTES = [
   '/settings',
   '/onboarding',
   '/dashboard',
+  '/resources',
 ]
 
 export async function middleware(request: NextRequest) {

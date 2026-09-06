@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { CheckCircle2, Flame, MessageSquare, Layers } from 'lucide-react';
+import { CheckCircle2, Flame, MessageSquare, Layers, Store } from 'lucide-react';
 import { useEmber } from '@/context/ember-context';
 import { Avatar } from '@/components/ui/avatar';
 
@@ -35,6 +35,11 @@ export function BottomNav({ embedded = false }: { embedded?: boolean }) {
       label: 'Habits',
       href: '/habits',
       icon: Layers,
+    },
+    {
+      label: 'Store',
+      href: '/resources',
+      icon: Store,
     },
   ];
 

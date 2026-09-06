@@ -13,6 +13,8 @@ import {
   Users,
   Plus,
   MessageSquare,
+  BookOpen,
+  Store,
 } from 'lucide-react';
 import { useEmber } from '@/context/ember-context';
 import { Avatar } from '@/components/ui/avatar';
@@ -57,6 +59,12 @@ export function Sidebar({
       label: 'My Habits',
       href: '/habits',
       icon: Layers,
+    },
+    {
+      label: 'Creator Store',
+      href: '/resources',
+      icon: Store,
+      badge: 'Soon',
     },
     // {
     //   label: 'Profile & Badges',
