@@ -119,8 +119,8 @@ export async function GET() {
             {
               userId: user.id,
               name: user.name,
-              username: user.name.toLowerCase().replace(/\s+/g, '_'),
-              avatar: user.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80',
+              username: user.user_name || user.username || user.name.toLowerCase().replace(/\s+/g, '_'),
+              avatar: user.profile_img || '',
               joinedAt: p.created_at,
               role: p.creator_id === user.id ? 'creator' : 'member',
               checkedInToday: completedTodayHabitIds.length > 0,
@@ -158,20 +158,19 @@ export async function GET() {
     // 6. Fetch Milestone Badges
     let formattedBadges: any[] = [];
     try {
-      const { data: badges } = await supabase
+      const { data: rawBadges } = await supabase
         .from('milestone_badges')
         .select('*')
         .eq('user_id', session.userId);
 
-      formattedBadges = (badges || []).map((b: any) => ({
+      formattedBadges = (rawBadges || []).map((b: any) => ({
         id: b.id,
         habitId: b.habit_id,
         title: b.title,
         description: b.description,
-        icon: b.icon,
-        thresholdDays: b.threshold_days,
+        icon: b.icon || '🔥',
         unlockedAt: b.unlocked_at,
-        isCelebrated: b.is_celebrated,
+        thresholdDays: b.threshold_days,
       }));
     } catch {}
 
@@ -179,9 +178,9 @@ export async function GET() {
       user: {
         id: user.id,
         name: user.name,
-        username: user.name.toLowerCase().replace(/\s+/g, '_'),
+        username: user.user_name || user.username || user.name.toLowerCase().replace(/\s+/g, '_'),
         email: user.email,
-        avatar: user.profile_img || user.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80',
+        avatar: user.profile_img || '',
         ageVerified: true,
         activePodId: pods[0]?.id || undefined,
         streakShields,

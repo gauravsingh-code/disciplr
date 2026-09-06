@@ -28,20 +28,20 @@ export async function GET(request: Request) {
         user_timezone,
         created_at,
         habit:habits(title, emoji, is_private),
-        user:users(id, name, avatar_url),
+        user:users(id, name, profile_img),
         reactions(
           id,
           emoji,
           user_id,
           created_at,
-          user:users(id, name, avatar_url)
+          user:users(id, name, profile_img)
         ),
         comments(
           id,
           content,
           user_id,
           created_at,
-          user:users(id, name, avatar_url)
+          user:users(id, name, profile_img)
         )
       `)
       .order('created_at', { ascending: false })
@@ -60,7 +60,7 @@ export async function GET(request: Request) {
       habitEmoji: l.habit?.emoji || '⚡',
       userId: l.user_id,
       userName: l.user?.name || 'Pod Member',
-      userAvatar: l.user?.avatar_url,
+      userAvatar: l.user?.profile_img || '',
       loggedDate: l.logged_date,
       userTimezone: l.user_timezone,
       status: l.status,
@@ -71,7 +71,7 @@ export async function GET(request: Request) {
         emoji: r.emoji,
         userId: r.user_id,
         userName: r.user?.name || 'Member',
-        userAvatar: r.user?.avatar_url,
+        userAvatar: r.user?.profile_img || '',
         createdAt: new Date(r.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       })),
       comments: (l.comments || []).map((c: any) => ({
@@ -79,7 +79,7 @@ export async function GET(request: Request) {
         content: c.content,
         userId: c.user_id,
         userName: c.user?.name || 'Member',
-        userAvatar: c.user?.avatar_url,
+        userAvatar: c.user?.profile_img || '',
         createdAt: new Date(c.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       })),
       createdAt: new Date(l.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),

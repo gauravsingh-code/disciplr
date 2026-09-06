@@ -18,16 +18,33 @@ export async function POST(request: Request) {
 
     const supabase = await createClient()
 
-    // Find user by email or name
-    const { data: user, error: findError } = await supabase
+    // Find user by email, username, or name
+    let user: any = null
+    let findError: any = null
+
+    const lookupRes = await supabase
       .from('users')
-      .select('id, name, email, encrypted_password, description, is_active')
-      .or(`email.eq.${loginIdentifier.toLowerCase()},name.eq.${loginIdentifier}`)
+      .select('id, name, user_name, email, encrypted_password, description, is_active')
+      .or(`email.eq.${loginIdentifier.toLowerCase()},name.eq.${loginIdentifier},user_name.eq.${loginIdentifier.toLowerCase()}`)
       .maybeSingle()
+
+    if (lookupRes.error) {
+      // Fallback if user_name column does not exist yet
+      const fallbackRes = await supabase
+        .from('users')
+        .select('id, name, email, encrypted_password, description, is_active')
+        .or(`email.eq.${loginIdentifier.toLowerCase()},name.eq.${loginIdentifier}`)
+        .maybeSingle()
+      user = fallbackRes.data
+      findError = fallbackRes.error
+    } else {
+      user = lookupRes.data
+      findError = lookupRes.error
+    }
 
     if (findError || !user) {
       return NextResponse.json(
-        { error: 'Invalid email/name or password.' },
+        { error: 'Invalid email, username, or password.' },
         { status: 401 }
       )
     }
@@ -44,16 +61,19 @@ export async function POST(request: Request) {
 
     if (!isPasswordValid) {
       return NextResponse.json(
-        { error: 'Invalid email/name or password.' },
+        { error: 'Invalid email, username, or password.' },
         { status: 401 }
       )
     }
+
+    const finalUsername = user.user_name || user.username || user.name.toLowerCase().replace(/\s+/g, '_')
 
     // Create session token and set HTTP-only cookie
     const token = await createSessionToken({
       userId: user.id,
       name: user.name,
       email: user.email,
+      username: finalUsername,
     })
     await setSessionCookie(token)
 
@@ -62,7 +82,10 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         message: 'Logged in successfully',
-        user: userWithoutPassword,
+        user: {
+          ...userWithoutPassword,
+          username: finalUsername,
+        },
       },
       { status: 200 }
     )

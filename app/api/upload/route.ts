@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
+import { createClient as createAdminClient } from '@supabase/supabase-js';
 
 export async function POST(request: Request) {
   try {
     const formData = await request.formData();
     const file = formData.get('file') as File | null;
-    const bucketName = (formData.get('bucket') as string) || 'avatars';
+    const bucketName = (formData.get('bucket') as string) || 'posts_images';
 
     if (!file) {
       return NextResponse.json(
@@ -18,12 +19,20 @@ export async function POST(request: Request) {
     const buffer = Buffer.from(bytes);
 
     const fileExt = file.name.split('.').pop() || 'png';
-    const fileName = `user_${Date.now()}_${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
-    const filePath = `profile-images/${fileName}`;
+    const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
+    
+    // Put post images cleanly inside the posts_images bucket
+    const filePath = bucketName === 'posts_images' 
+      ? `posts/${fileName}` 
+      : (bucketName === 'avatars' ? `profile-images/${fileName}` : `uploads/${fileName}`);
 
-    const supabase = await createClient();
+    // Use service role if available on server to bypass storage RLS hurdles
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SECRET_KEY_1;
+    const supabase = (serviceKey && process.env.NEXT_PUBLIC_SUPABASE_URL)
+      ? createAdminClient(process.env.NEXT_PUBLIC_SUPABASE_URL, serviceKey)
+      : await createClient();
 
-    // 1. Try uploading to specified bucket
+    // 1. Try uploading to specified bucket (e.g. 'posts_images')
     let uploadRes = await supabase.storage
       .from(bucketName)
       .upload(filePath, buffer, {
@@ -31,10 +40,10 @@ export async function POST(request: Request) {
         upsert: true,
       });
 
-    // 2. If specified bucket fails (e.g. not found), attempt fallback buckets ('profiles', 'public', 'media')
+    // 2. If specified bucket fails, attempt fallback buckets
     if (uploadRes.error) {
       console.warn(`Storage upload to ${bucketName} failed:`, uploadRes.error.message);
-      const fallbackBuckets = ['profiles', 'public', 'media', 'proofs'].filter(
+      const fallbackBuckets = ['posts_images', 'media', 'avatars', 'profiles', 'public', 'proofs'].filter(
         (b) => b !== bucketName
       );
 

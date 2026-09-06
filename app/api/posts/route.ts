@@ -23,7 +23,7 @@ export async function GET(request: Request) {
         likes_count,
         reposts_count,
         created_at,
-        users:user_id(id, name, avatar_url),
+        users:user_id(id, name, user_name, profile_img),
         pods:pod_id(id, name, emoji)
       `)
       .order('created_at', { ascending: false })
@@ -35,7 +35,40 @@ export async function GET(request: Request) {
       query = query.eq('is_pod_only', false);
     }
 
-    const { data: rawPosts, error } = await query;
+    let rawPosts: any[] | null = null;
+    let { data: initialPosts, error } = await query;
+    rawPosts = initialPosts as any;
+
+    if (error) {
+      // Fallback query if username column is not present in users table
+      let fallbackQuery = supabase
+        .from('posts')
+        .select(`
+          id,
+          user_id,
+          content,
+          media_url,
+          pod_id,
+          is_pod_only,
+          likes_count,
+          reposts_count,
+          created_at,
+          users:user_id(id, name, profile_img),
+          pods:pod_id(id, name, emoji)
+        `)
+        .order('created_at', { ascending: false })
+        .limit(50);
+
+      if (scope === 'pod' && podId) {
+        fallbackQuery = fallbackQuery.eq('pod_id', podId);
+      } else if (scope === 'community') {
+        fallbackQuery = fallbackQuery.eq('is_pod_only', false);
+      }
+
+      const fbRes = await fallbackQuery;
+      rawPosts = fbRes.data as any;
+      error = fbRes.error;
+    }
 
     if (error) {
       console.error('Error fetching posts:', error);
@@ -82,10 +115,8 @@ export async function GET(request: Request) {
         id: p.id,
         userId: p.user_id,
         userName: authorName,
-        userUsername: authorName.toLowerCase().replace(/\s+/g, '_'),
-        userAvatar:
-          author?.avatar_url ||
-          'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80',
+        userUsername: author?.user_name || author?.username || authorName.toLowerCase().replace(/\s+/g, '_'),
+        userAvatar: author?.profile_img || '',
         content: p.content,
         mediaUrl: p.media_url || undefined,
         podId: p.pod_id || undefined,
@@ -132,11 +163,23 @@ export async function POST(request: Request) {
     const supabase = await createClient();
 
     // 1. Fetch current user info
-    const { data: user } = await supabase
+    let user: any = null;
+    const { data: userData } = await supabase
       .from('users')
-      .select('id, name, avatar_url')
+      .select('id, name, user_name, profile_img')
       .eq('id', session.userId)
       .maybeSingle();
+
+    user = userData;
+
+    if (!user) {
+      const fbUser = await supabase
+        .from('users')
+        .select('id, name, profile_img')
+        .eq('id', session.userId)
+        .maybeSingle();
+      user = fbUser.data;
+    }
 
     // 2. Insert Post
     const { data: newPost, error: insertError } = await supabase
@@ -177,10 +220,8 @@ export async function POST(request: Request) {
       id: newPost.id,
       userId: newPost.user_id,
       userName: authorName,
-      userUsername: authorName.toLowerCase().replace(/\s+/g, '_'),
-      userAvatar:
-        user?.avatar_url ||
-        'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80',
+      userUsername: user?.user_name || user?.username || session.username || authorName.toLowerCase().replace(/\s+/g, '_'),
+      userAvatar: user?.profile_img || '',
       content: newPost.content,
       mediaUrl: newPost.media_url || undefined,
       podId: newPost.pod_id || undefined,

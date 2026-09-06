@@ -3,12 +3,13 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { CheckCircle2, Flame, MessageSquare, Layers, UserCircle, Settings } from 'lucide-react';
+import { CheckCircle2, Flame, MessageSquare, Layers } from 'lucide-react';
 import { useEmber } from '@/context/ember-context';
+import { Avatar } from '@/components/ui/avatar';
 
 export function BottomNav({ embedded = false }: { embedded?: boolean }) {
   const pathname = usePathname();
-  const { completedTodayHabitIds, habits } = useEmber();
+  const { completedTodayHabitIds, habits, user } = useEmber();
 
   const activeHabitsCount = habits.filter((h) => !h.isArchived).length;
   const remainingToday = Math.max(0, activeHabitsCount - completedTodayHabitIds.length);
@@ -35,12 +36,9 @@ export function BottomNav({ embedded = false }: { embedded?: boolean }) {
       href: '/habits',
       icon: Layers,
     },
-    {
-      label: 'Profile',
-      href: '/profile',
-      icon: UserCircle,
-    },
   ];
+
+  const isProfileActive = pathname === '/profile' || pathname.startsWith('/profile');
 
   return (
     <nav
@@ -90,6 +88,33 @@ export function BottomNav({ embedded = false }: { embedded?: boolean }) {
             </Link>
           );
         })}
+
+        {/* Profile — sticky avatar in bottom nav */}
+        <Link
+          href="/profile"
+          className="relative flex flex-col items-center justify-center flex-1 py-1 transition-all select-none group"
+        >
+          <Avatar
+            src={user.avatar}
+            name={user.name || 'Me'}
+            size="xs"
+            className={`transition-all duration-200 group-hover:scale-110 ${
+              isProfileActive
+                ? 'ring-2 ring-orange-500 ring-offset-1 ring-offset-zinc-950'
+                : 'ring-1 ring-zinc-700 group-hover:ring-zinc-500'
+            }`}
+          />
+          <span
+            className={`text-[11px] mt-1 font-medium tracking-tight ${
+              isProfileActive ? 'text-orange-400 font-semibold' : 'text-zinc-400'
+            }`}
+          >
+            Profile
+          </span>
+          {isProfileActive && (
+            <span className="absolute -bottom-1 w-8 h-1 bg-gradient-to-r from-orange-500 to-amber-500 rounded-full shadow-sm shadow-orange-500/50" />
+          )}
+        </Link>
       </div>
     </nav>
   );

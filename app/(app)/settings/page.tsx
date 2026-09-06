@@ -15,7 +15,10 @@ import {
   ShieldAlert,
   UserX,
   LogOut,
+  Sparkles,
+  Zap,
 } from 'lucide-react';
+import { RazorpayCheckoutButton } from '@/components/payment/razorpay-checkout-button';
 
 export default function SettingsPage() {
   const { user, updateUserProfile, habits, pods, feedLogs } = useEmber();
@@ -140,6 +143,64 @@ export default function SettingsPage() {
           </div>
         </div>
       </div>
+
+      {/* Section 2.5: Disciplr Pro Membership (Razorpay Standard Checkout) */}
+      {/* <div className="glass-card rounded-2xl p-5 space-y-4 border-orange-500/20 bg-gradient-to-b from-orange-950/20 via-zinc-900/40 to-zinc-900/60 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-orange-500/5 rounded-full blur-3xl pointer-events-none" />
+        <div className="flex items-center justify-between pb-2 border-b border-zinc-800/80">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-orange-400" />
+            <h2 className="text-sm font-bold text-zinc-100 uppercase tracking-wider">
+              Membership & Billing
+            </h2>
+          </div>
+          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-orange-500/20 text-orange-400 border border-orange-500/30 uppercase tracking-wider">
+            Razorpay Live / Test
+          </span>
+        </div>
+
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div className="space-y-1.5 max-w-md">
+            <div className="flex items-center gap-2">
+              <h3 className="text-base font-extrabold text-white">Disciplr Pro Lifetime Pass</h3>
+              <span className="text-xs font-semibold text-orange-400 bg-orange-500/10 px-2 py-0.5 rounded-md border border-orange-500/20">
+                ₹499
+              </span>
+            </div>
+            <p className="text-xs text-zinc-400 leading-relaxed">
+              Unlock unlimited accountability pods, streak protection shields, and verified member badges. Powered securely by Razorpay Standard Checkout.
+            </p>
+            <div className="flex flex-wrap items-center gap-3 pt-1 text-[11px] text-zinc-300">
+              <span className="flex items-center gap-1"><Zap className="w-3 h-3 text-amber-400" /> Unlimited Pods</span>
+              <span className="flex items-center gap-1"><Shield className="w-3 h-3 text-indigo-400" /> +5 Streak Shields</span>
+              <span className="flex items-center gap-1"><Sparkles className="w-3 h-3 text-orange-400" /> Instant Activation</span>
+            </div>
+          </div>
+
+          <div className="w-full md:w-auto">
+            <RazorpayCheckoutButton
+              amountInPaise={49900}
+              currency="INR"
+              itemName="Disciplr Pro Lifetime"
+              description="Disciplr Pro Lifetime Access with Unlimited Pods"
+              customerName={user.name}
+              customerEmail={user.email}
+              buttonText="Upgrade to Pro (₹499)"
+              variant="glow"
+              size="md"
+              onSuccess={(res) => {
+                console.log('Payment verified successfully in UI:', res);
+                updateUserProfile({
+                  streakShields: {
+                    ...user.streakShields,
+                    totalAvailable: (user.streakShields?.totalAvailable || 0) + 5,
+                  },
+                });
+              }}
+            />
+          </div>
+        </div>
+      </div> */}
 
       {/* Section 3: Data Ownership & GDPR */}
       <div className="glass-card rounded-2xl p-5 space-y-4">

@@ -14,7 +14,8 @@ export async function GET(
 
     const supabase = await createClient();
 
-    const { data: rawReplies, error } = await supabase
+    let rawReplies: any[] | null = null;
+    let { data: initialReplies, error } = await supabase
       .from('post_replies')
       .select(`
         id,
@@ -22,10 +23,29 @@ export async function GET(
         user_id,
         content,
         created_at,
-        users:user_id(id, name, avatar_url)
+        users:user_id(id, name, user_name, profile_img)
       `)
       .eq('post_id', postId)
       .order('created_at', { ascending: true });
+
+    rawReplies = initialReplies as any;
+
+    if (error) {
+      const fbReplies = await supabase
+        .from('post_replies')
+        .select(`
+          id,
+          post_id,
+          user_id,
+          content,
+          created_at,
+          users:user_id(id, name, profile_img)
+        `)
+        .eq('post_id', postId)
+        .order('created_at', { ascending: true });
+      rawReplies = fbReplies.data as any;
+      error = fbReplies.error;
+    }
 
     if (error) {
       console.error('Error fetching replies:', error);
@@ -41,10 +61,8 @@ export async function GET(
         postId: r.post_id,
         userId: r.user_id,
         userName: authorName,
-        userUsername: authorName.toLowerCase().replace(/\s+/g, '_'),
-        userAvatar:
-          author?.avatar_url ||
-          'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80',
+        userUsername: author?.user_name || author?.username || authorName.toLowerCase().replace(/\s+/g, '_'),
+        userAvatar: author?.profile_img || '',
         content: r.content,
         createdAt: r.created_at,
       };
@@ -89,11 +107,23 @@ export async function POST(
     const supabase = await createClient();
 
     // 1. Fetch user info
-    const { data: user } = await supabase
+    let user: any = null;
+    const { data: userData } = await supabase
       .from('users')
-      .select('id, name, avatar_url')
+      .select('id, name, user_name, profile_img')
       .eq('id', session.userId)
       .maybeSingle();
+
+    user = userData;
+
+    if (!user) {
+      const fbUser = await supabase
+        .from('users')
+        .select('id, name, profile_img')
+        .eq('id', session.userId)
+        .maybeSingle();
+      user = fbUser.data;
+    }
 
     // 2. Insert Reply
     const { data: newReply, error: insertError } = await supabase
@@ -120,10 +150,8 @@ export async function POST(
       postId: newReply.post_id,
       userId: newReply.user_id,
       userName: authorName,
-      userUsername: authorName.toLowerCase().replace(/\s+/g, '_'),
-      userAvatar:
-        user?.avatar_url ||
-        'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80',
+      userUsername: user?.user_name || user?.username || session.username || authorName.toLowerCase().replace(/\s+/g, '_'),
+      userAvatar: user?.profile_img || '',
       content: newReply.content,
       createdAt: newReply.created_at,
     };

@@ -1,6 +1,7 @@
 export interface AuthResponseUser {
   id: string;
   name: string;
+  username?: string;
   email: string;
   avatar_url?: string | null;
   profile_img?: string | null;
@@ -52,6 +53,7 @@ export async function uploadProfileImageApi(file: File): Promise<string> {
 
 export async function signupApi(params: {
   name: string;
+  username?: string;
   email: string;
   password: string;
   profile_img?: string;

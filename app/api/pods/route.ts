@@ -11,7 +11,7 @@ export async function GET() {
 
     const supabase = await createClient();
 
-    const { data: memberships } = await supabase
+    let { data: memberships, error } = await supabase
       .from('pod_memberships')
       .select(`
         role,
@@ -29,11 +29,39 @@ export async function GET() {
             user_id,
             role,
             joined_at,
-            user:users(id, name, avatar_url)
+            user:users(id, name, user_name, profile_img)
           )
         )
       `)
       .eq('user_id', session.userId);
+
+    if (error) {
+      const fb = await supabase
+        .from('pod_memberships')
+        .select(`
+          role,
+          joined_at,
+          pod:pods(
+            id,
+            name,
+            description,
+            emoji,
+            invite_code,
+            creator_id,
+            max_members,
+            created_at,
+            pod_memberships(
+              user_id,
+              role,
+              joined_at,
+              user:users(id, name, profile_img)
+            )
+          )
+        `)
+        .eq('user_id', session.userId);
+      memberships = fb.data;
+      error = fb.error;
+    }
 
     const pods = (memberships || [])
       .map((m: any) => m.pod)
@@ -50,8 +78,8 @@ export async function GET() {
         members: (p.pod_memberships || []).map((pm: any) => ({
           userId: pm.user_id,
           name: pm.user?.name || 'Member',
-          username: pm.user?.name ? pm.user.name.toLowerCase().replace(/\s+/g, '_') : 'member',
-          avatar: pm.user?.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80',
+          username: pm.user?.user_name || pm.user?.username || (pm.user?.name ? pm.user.name.toLowerCase().replace(/\s+/g, '_') : 'member'),
+          avatar: pm.user?.profile_img || '',
           joinedAt: pm.joined_at,
           role: pm.role,
           checkedInToday: false,
@@ -128,7 +156,7 @@ export async function POST(request: Request) {
             {
               userId: session.userId,
               name: session.name,
-              username: session.name.toLowerCase().replace(/\s+/g, '_'),
+              username: session.username || session.name.toLowerCase().replace(/\s+/g, '_'),
               avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80',
               joinedAt: new Date().toISOString(),
               role: 'creator',

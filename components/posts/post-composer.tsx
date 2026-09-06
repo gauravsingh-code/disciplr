@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useEmber } from '@/context/ember-context';
 import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
+import { Post } from '@/types/ember';
 import {
   Image as ImageIcon,
   Sparkles,
@@ -11,22 +12,27 @@ import {
   Globe,
   Send,
   X,
-  Smile,
+  Loader2,
+  AlertCircle,
 } from 'lucide-react';
 
 interface PostComposerProps {
-  onPostCreated?: () => void;
+  onPostCreated?: (post: Post) => void;
   defaultPodOnly?: boolean;
+  /** Hard-bind the post to a specific pod (hides the visibility toggle) */
+  podId?: string;
 }
 
-const EMOJI_SUGGESTIONS = ['🔥', '💪', '⚡', '🙌', '🎯', '✨', '🚀', '🧘‍♂️', '📖'];
 
-export function PostComposer({ onPostCreated, defaultPodOnly = false }: PostComposerProps) {
+export function PostComposer({ onPostCreated, defaultPodOnly = false, podId: hardPodId }: PostComposerProps) {
   const { user, activePod, createPost } = useEmber();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [content, setContent] = useState('');
   const [mediaUrl, setMediaUrl] = useState('');
-  const [showImageInput, setShowImageInput] = useState(false);
+  const [localPreview, setLocalPreview] = useState('');
+  const [isUploadingMedia, setIsUploadingMedia] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const [isPodOnly, setIsPodOnly] = useState(defaultPodOnly);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -34,23 +40,86 @@ export function PostComposer({ onPostCreated, defaultPodOnly = false }: PostComp
   const remainingChars = charLimit - content.length;
   const isOverLimit = remainingChars < 0;
 
+  const handleImageFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate size (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      setUploadError('Image size exceeds 10MB limit. Please choose a smaller photo.');
+      return;
+    }
+
+    setUploadError(null);
+    setIsUploadingMedia(true);
+
+    // Keep immediate local preview in browser memory so it never disappears or flickers
+    const previewUrl = URL.createObjectURL(file);
+    setLocalPreview(previewUrl);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('bucket', 'posts_images');
+
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.url) {
+        throw new Error(data.error || 'Failed to upload photo');
+      }
+
+      setMediaUrl(data.url);
+    } catch (err: any) {
+      console.error('Photo upload error:', err);
+      setUploadError(err?.message || 'Failed to upload photo');
+      setLocalPreview('');
+      setMediaUrl('');
+    } finally {
+      setIsUploadingMedia(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setLocalPreview('');
+    setMediaUrl('');
+    setUploadError(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!content.trim() || isOverLimit || isSubmitting) return;
+    if (!content.trim() || isOverLimit || isSubmitting || isUploadingMedia) return;
 
     setIsSubmitting(true);
     try {
-      await createPost({
+      // If a hard podId is supplied (pod page), always post to that pod
+      const resolvedPodId = hardPodId ?? (isPodOnly ? activePod?.id : undefined);
+      const resolvedIsPodOnly = hardPodId ? true : isPodOnly;
+
+      const created = await createPost({
         content: content.trim(),
         mediaUrl: mediaUrl.trim() || undefined,
-        podId: isPodOnly ? activePod?.id : undefined,
-        isPodOnly,
+        podId: resolvedPodId,
+        isPodOnly: resolvedIsPodOnly,
       });
 
       setContent('');
+      setLocalPreview('');
       setMediaUrl('');
-      setShowImageInput(false);
-      onPostCreated?.();
+      setUploadError(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+      if (created) onPostCreated?.(created);
     } catch {
       // handled
     } finally {
@@ -58,9 +127,6 @@ export function PostComposer({ onPostCreated, defaultPodOnly = false }: PostComp
     }
   };
 
-  const handleInsertEmoji = (emoji: string) => {
-    setContent((prev) => `${prev} ${emoji}`);
-  };
 
   return (
     <div className="glass-card rounded-3xl p-4 sm:p-5 border border-zinc-800/80 shadow-xl space-y-3">
@@ -79,89 +145,94 @@ export function PostComposer({ onPostCreated, defaultPodOnly = false }: PostComp
               value={content}
               onChange={(e) => setContent(e.target.value)}
               placeholder={
-                isPodOnly && activePod
+                hardPodId
+                  ? 'Send a message to this pod...'
+                  : isPodOnly && activePod
                   ? `Share an update with ${activePod.name}...`
-                  : "What ritual did you conquer today? Share your thoughts..."
+                  : 'What ritual did you conquer today? Share your thoughts...'
               }
               rows={3}
               className="w-full bg-transparent text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none resize-none"
             />
 
-            {/* Media Image Preview */}
-            {mediaUrl && (
-              <div className="relative rounded-2xl overflow-hidden border border-zinc-800 max-h-60 group">
+            {/* Media Image Preview with Upload State */}
+            {(localPreview || mediaUrl) && (
+              <div className="relative rounded-2xl overflow-hidden border border-zinc-800 max-h-60 group bg-zinc-900/80">
                 <img
-                  src={mediaUrl}
+                  src={localPreview || mediaUrl}
                   alt="Attachment preview"
-                  className="w-full h-full object-cover"
+                  className={`w-full h-full object-cover transition-opacity ${
+                    isUploadingMedia ? 'opacity-50' : 'opacity-100'
+                  }`}
                 />
-                <button
-                  type="button"
-                  onClick={() => setMediaUrl('')}
-                  className="absolute top-2 right-2 p-1.5 rounded-full bg-zinc-950/80 text-zinc-300 hover:text-white hover:bg-zinc-900 transition-colors cursor-pointer"
-                >
-                  <X className="w-4 h-4" />
-                </button>
+
+                {isUploadingMedia ? (
+                  <div className="absolute inset-0 flex items-center justify-center bg-zinc-950/40 backdrop-blur-xs">
+                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-zinc-900/90 border border-zinc-700 text-xs text-orange-400 font-semibold shadow-lg">
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>Uploading photo...</span>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleRemoveImage}
+                    className="absolute top-2 right-2 p-1.5 rounded-full bg-zinc-950/80 text-zinc-300 hover:text-white hover:bg-zinc-900 transition-colors cursor-pointer"
+                    title="Remove photo"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
               </div>
             )}
 
-            {/* Image URL Input Drawer */}
-            {showImageInput && !mediaUrl && (
-              <div className="flex items-center gap-2 p-2 rounded-xl bg-zinc-900/90 border border-zinc-800 animate-scale-in">
-                <ImageIcon className="w-4 h-4 text-zinc-400 shrink-0" />
-                <input
-                  type="url"
-                  value={mediaUrl}
-                  onChange={(e) => setMediaUrl(e.target.value)}
-                  placeholder="Paste image URL (e.g. https://...)"
-                  className="w-full bg-transparent text-xs text-zinc-200 placeholder:text-zinc-500 focus:outline-none"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowImageInput(false)}
-                  className="p-1 text-zinc-500 hover:text-zinc-300 cursor-pointer"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
+            {/* Upload Error Banner */}
+            {uploadError && (
+              <div className="text-xs text-rose-400 flex items-center gap-1.5 py-1">
+                <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                <span>{uploadError}</span>
               </div>
             )}
           </div>
         </div>
 
-        {/* Quick Emoji Strip */}
-        <div className="flex items-center gap-1 overflow-x-auto pb-1 no-scrollbar pl-11">
-          {EMOJI_SUGGESTIONS.map((emoji) => (
-            <button
-              key={emoji}
-              type="button"
-              onClick={() => handleInsertEmoji(emoji)}
-              className="p-1 hover:bg-zinc-800 rounded-lg text-sm transition-transform hover:scale-110 cursor-pointer"
-            >
-              {emoji}
-            </button>
-          ))}
-        </div>
 
         {/* Bottom Toolbar */}
         <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-zinc-800/80">
           <div className="flex items-center gap-2">
-            {/* Image Attachment Toggle */}
+            {/* Hidden Native File Input for Gallery / Device File Selection */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleImageFileChange}
+            />
+
+            {/* Gallery Photo Selection Button */}
             <button
               type="button"
-              onClick={() => setShowImageInput(!showImageInput)}
-              className={`p-2 rounded-xl border text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer ${
-                mediaUrl || showImageInput
+              disabled={isUploadingMedia}
+              onClick={() => fileInputRef.current?.click()}
+              className={`p-2 rounded-xl border text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50 ${
+                localPreview || mediaUrl
                   ? 'bg-orange-500/15 border-orange-500/30 text-orange-400'
                   : 'bg-zinc-900/60 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700'
               }`}
-              title="Add Image"
+              title="Upload image from gallery"
             >
-              <ImageIcon className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Photo</span>
+              {isUploadingMedia ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-orange-400" />
+              ) : (
+                <ImageIcon className="w-3.5 h-3.5" />
+              )}
+              <span className="hidden sm:inline">
+                {isUploadingMedia ? 'Uploading...' : 'Photo'}
+              </span>
             </button>
 
-            {/* Visibility Scope Pill: Pod Only vs Community */}
-            {activePod && (
+            {/* Visibility toggle — hidden when podId is hard-bound */}
+            {!hardPodId && activePod && (
               <button
                 type="button"
                 onClick={() => setIsPodOnly(!isPodOnly)}
@@ -185,6 +256,13 @@ export function PostComposer({ onPostCreated, defaultPodOnly = false }: PostComp
                 )}
               </button>
             )}
+            {/* Hard-bound pod indicator */}
+            {hardPodId && (
+              <span className="px-2.5 py-1.5 rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-300 text-xs font-medium flex items-center gap-1.5">
+                <Users className="w-3.5 h-3.5 text-amber-400" />
+                Pod only
+              </span>
+            )}
           </div>
 
           <div className="flex items-center gap-3">
@@ -207,7 +285,7 @@ export function PostComposer({ onPostCreated, defaultPodOnly = false }: PostComp
               variant="primary"
               size="sm"
               isLoading={isSubmitting}
-              disabled={!content.trim() || isOverLimit}
+              disabled={!content.trim() || isOverLimit || isUploadingMedia}
               rightIcon={<Send className="w-3.5 h-3.5" />}
             >
               Post

@@ -12,6 +12,7 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 CREATE TABLE IF NOT EXISTS public.users (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(100) NOT NULL UNIQUE,
+    user_name VARCHAR(50) NOT NULL UNIQUE,
     email VARCHAR(255) NOT NULL UNIQUE,
     encrypted_password VARCHAR(200) NOT NULL,
     avatar_url TEXT,
@@ -21,6 +22,10 @@ CREATE TABLE IF NOT EXISTS public.users (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- Migration helper if table already exists without user_name column:
+-- ALTER TABLE public.users ADD COLUMN IF NOT EXISTS user_name VARCHAR(50) UNIQUE;
+
 
 -- ---------------------------------------------------------
 -- 2. PODS TABLE (Small closed circles, 3-8 members)

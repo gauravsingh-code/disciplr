@@ -7,7 +7,7 @@ import { HABIT_TEMPLATES } from '@/lib/mock-data';
 import { Modal } from '@/components/ui/modal';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
-import { Sparkles, Clock, Lock, Users, Calendar } from 'lucide-react';
+import { Sparkles, Clock, Lock, Calendar } from 'lucide-react';
 
 interface HabitModalProps {
   isOpen: boolean;
@@ -15,12 +15,40 @@ interface HabitModalProps {
   habitToEdit?: Habit | null;
 }
 
+// Convert "08:00 AM" / "08:30 PM" to "08:00" / "20:30" (for <input type="time" />)
+function to24Hour(timeStr: string): string {
+  if (!timeStr) return '08:00';
+  const match = timeStr.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?$/i);
+  if (!match) return timeStr.length === 5 ? timeStr : '08:00';
+  let hours = parseInt(match[1], 10);
+  const minutes = match[2];
+  const period = match[3]?.toUpperCase();
+  if (period === 'PM' && hours < 12) hours += 12;
+  if (period === 'AM' && hours === 12) hours = 0;
+  return `${hours.toString().padStart(2, '0')}:${minutes}`;
+}
+
+// Convert "20:30" back to clean "08:30 PM" (for storage and database)
+function to12Hour(time24: string): string {
+  if (!time24) return '08:00 AM';
+  const [hStr, mStr] = time24.split(':');
+  let hours = parseInt(hStr, 10);
+  const minutes = mStr || '00';
+  const period = hours >= 12 ? 'PM' : 'AM';
+  hours = hours % 12 || 12;
+  return `${hours.toString().padStart(2, '0')}:${minutes} ${period}`;
+}
+
+function formatDisplayTime(timeStr: string): string {
+  return to12Hour(to24Hour(timeStr));
+}
+
 export function HabitModal({
   isOpen,
   onClose,
   habitToEdit,
 }: HabitModalProps) {
-  const { createHabit, updateHabit, pods, activePod, activePodId } = useEmber();
+  const { createHabit, updateHabit } = useEmber();
 
   const [title, setTitle] = useState('');
   const [emoji, setEmoji] = useState('🔥');
@@ -29,7 +57,6 @@ export function HabitModal({
   const [timesPerWeek, setTimesPerWeek] = useState(4);
   const [reminderTime, setReminderTime] = useState('08:00 AM');
   const [isPrivate, setIsPrivate] = useState(false);
-  const [selectedPodIds, setSelectedPodIds] = useState<string[]>([]);
 
   useEffect(() => {
     if (habitToEdit) {
@@ -40,7 +67,6 @@ export function HabitModal({
       setTimesPerWeek(habitToEdit.frequency.timesPerWeek || 4);
       setReminderTime(habitToEdit.reminderTime);
       setIsPrivate(habitToEdit.isPrivate);
-      setSelectedPodIds(habitToEdit.sharedPodIds);
     } else {
       setTitle('');
       setEmoji('⚡');
@@ -48,10 +74,9 @@ export function HabitModal({
       setSelectedDays([1, 2, 3, 4, 5]);
       setTimesPerWeek(4);
       setReminderTime('08:00 AM');
-      setIsPrivate(activePodId === 'me');
-      setSelectedPodIds(activePodId !== 'me' && activePod ? [activePod.id] : []);
+      setIsPrivate(false);
     }
-  }, [habitToEdit, isOpen, pods, activePod, activePodId]);
+  }, [habitToEdit, isOpen]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,7 +95,7 @@ export function HabitModal({
         frequency,
         reminderTime,
         isPrivate,
-        sharedPodIds: isPrivate ? [] : selectedPodIds,
+        sharedPodIds: isPrivate ? [] : (habitToEdit.sharedPodIds || []),
       });
     } else {
       createHabit({
@@ -79,7 +104,7 @@ export function HabitModal({
         frequency,
         reminderTime,
         isPrivate,
-        sharedPodIds: isPrivate ? [] : selectedPodIds,
+        sharedPodIds: [],
       });
     }
 
@@ -107,7 +132,7 @@ export function HabitModal({
       isOpen={isOpen}
       onClose={onClose}
       title={habitToEdit ? 'Edit Habit' : 'Create New Habit'}
-      description="Define your daily discipline. Habits can be private or shared into your closed Pods."
+      description="Define your daily discipline. Track your progress with streaks and forgiving shields."
     >
       <form onSubmit={handleSubmit} className="space-y-5">
         {/* Quick Templates (Only when creating) */}
@@ -223,62 +248,55 @@ export function HabitModal({
           )}
         </div>
 
-        {/* Reminder Time */}
+        {/* Reminder Time (hidden for now)
         <div>
-          <label className="block text-xs font-semibold text-zinc-300 mb-1.5 flex items-center gap-1.5">
-            <Clock className="w-3.5 h-3.5 text-orange-400" />
-            Daily Reminder Time
+          <label className="block text-xs font-semibold text-zinc-300 mb-1.5 flex items-center justify-between">
+            <span className="flex items-center gap-1.5">
+              <Clock className="w-3.5 h-3.5 text-orange-400" />
+              Daily Reminder Time
+            </span>
+            <span className="text-[11px] text-zinc-400 font-normal">
+              Formatted: {formatDisplayTime(reminderTime)}
+            </span>
           </label>
-          <input
-            type="text"
-            value={reminderTime}
-            onChange={(e) => setReminderTime(e.target.value)}
-            placeholder="e.g. 07:30 AM or 20:00"
-            className="w-full px-3.5 py-2.5 bg-zinc-800/90 border border-zinc-700 rounded-xl text-zinc-100 text-sm focus:outline-none focus:border-orange-500"
-          />
+          <div className="flex items-center gap-2">
+            <input
+              type="time"
+              value={to24Hour(reminderTime)}
+              onChange={(e) => {
+                if (e.target.value) {
+                  setReminderTime(to12Hour(e.target.value));
+                }
+              }}
+              required
+              className="flex-1 px-3.5 py-2.5 bg-zinc-800/90 border border-zinc-700 rounded-xl text-zinc-100 text-sm focus:outline-none focus:border-orange-500 cursor-pointer [color-scheme:dark]"
+            />
+            {['07:00 AM', '12:00 PM', '08:00 PM'].map((preset) => (
+              <button
+                key={preset}
+                type="button"
+                onClick={() => setReminderTime(preset)}
+                className={`text-xs px-2.5 py-2.5 rounded-xl border transition-colors cursor-pointer ${
+                  reminderTime === preset
+                    ? 'bg-orange-500/20 border-orange-500/50 text-orange-300 font-bold'
+                    : 'bg-zinc-800/80 hover:bg-zinc-700/80 border-zinc-700 text-zinc-400 hover:text-zinc-200'
+                }`}
+              >
+                {preset.replace(':00', '')}
+              </button>
+            ))}
+          </div>
         </div>
+        */}
 
-        {/* Privacy & Pod Sharing Toggles */}
+        {/* Privacy Toggle */}
         <div className="p-3.5 rounded-xl bg-zinc-800/50 border border-zinc-700/80 space-y-3">
           <Switch
             checked={isPrivate}
             onChange={setIsPrivate}
             label="Make this habit Private"
-            description="If enabled, check-ins won't be posted to any Pod feed."
+            description="If enabled, check-ins will remain private to your personal dashboard."
           />
-
-          {!isPrivate && pods.length > 0 && (
-            <div className="pt-2.5 border-t border-zinc-700/60">
-              <label className="block text-xs font-semibold text-zinc-300 mb-1.5">
-                Share into Pods:
-              </label>
-              <div className="space-y-1.5">
-                {pods.map((pod) => (
-                  <label
-                    key={pod.id}
-                    className="flex items-center gap-2 text-xs text-zinc-300 cursor-pointer select-none"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={selectedPodIds.includes(pod.id)}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setSelectedPodIds([...selectedPodIds, pod.id]);
-                        } else {
-                          setSelectedPodIds(
-                            selectedPodIds.filter((id) => id !== pod.id)
-                          );
-                        }
-                      }}
-                      className="rounded accent-orange-500"
-                    />
-                    <span>{pod.emoji}</span>
-                    <span className="font-medium">{pod.name}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Submit */}

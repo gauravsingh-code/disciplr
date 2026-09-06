@@ -19,6 +19,7 @@ import {
   Camera,
   X,
   UploadCloud,
+  AtSign,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -37,6 +38,8 @@ export default function SignupPage() {
   }, []);
 
   const [name, setName] = useState('');
+  const [username, setUsername] = useState('');
+  const [isCustomUsername, setIsCustomUsername] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [description, setDescription] = useState('');
@@ -47,25 +50,29 @@ export default function SignupPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
+  const handleNameChange = (val: string) => {
+    setName(val);
+    if (!isCustomUsername) {
+      setUsername(val.toLowerCase().replace(/[^a-z0-9_]/g, '').slice(0, 30));
+    }
+  };
+
+  const handleUsernameChange = (val: string) => {
+    setIsCustomUsername(true);
+    setUsername(val.toLowerCase().replace(/[^a-z0-9_]/g, '').slice(0, 30));
+  };
+
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 10 * 1024 * 1024) {
-        setErrorMessage('Profile image must be smaller than 10MB.');
-        return;
-      }
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
       setProfileImageFile(file);
-      const previewUrl = URL.createObjectURL(file);
-      setProfileImagePreview(previewUrl);
+      setProfileImagePreview(URL.createObjectURL(file));
     }
   };
 
   const handleRemoveImage = () => {
     setProfileImageFile(null);
-    if (profileImagePreview) {
-      URL.revokeObjectURL(profileImagePreview);
-      setProfileImagePreview('');
-    }
+    setProfileImagePreview('');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -73,12 +80,13 @@ export default function SignupPage() {
     setErrorMessage('');
 
     if (!ageConfirmed) {
-      setErrorMessage('You must confirm you are at least 16 years old to use Disciplr.');
+      setErrorMessage('You must be 16 years or older to use Disciplr.');
       return;
     }
 
-    if (password.length < 6) {
-      setErrorMessage('Password must be at least 6 characters long.');
+    const cleanUsername = (username || name.toLowerCase().replace(/[^a-z0-9_]/g, '')).trim().toLowerCase();
+    if (cleanUsername.length < 3) {
+      setErrorMessage('Username must be at least 3 characters long (letters, numbers, underscores).');
       return;
     }
 
@@ -96,9 +104,10 @@ export default function SignupPage() {
         }
       }
 
-      // 2. Call Signup API with profile_img
+      // 2. Call Signup API with profile_img & username
       const response = await signupApi({
         name: name.trim(),
+        username: cleanUsername,
         email: email.trim(),
         password,
         description: description.trim() || undefined,
@@ -110,7 +119,7 @@ export default function SignupPage() {
         updateUserProfile({
           id: response.user.id,
           name: response.user.name,
-          username: response.user.name.toLowerCase().replace(/\s+/g, '_'),
+          username: response.user.username || cleanUsername,
           email: response.user.email,
           avatar: uploadedProfileImgUrl || response.user.avatar_url || response.user.profile_img || undefined,
           ageVerified: true,
@@ -226,11 +235,30 @@ export default function SignupPage() {
               <input
                 type="text"
                 value={name}
-                onChange={(e) => setName(e.target.value)}
+                onChange={(e) => handleNameChange(e.target.value)}
                 required
                 placeholder="e.g. Jordan Miller"
                 className="w-full px-3.5 py-2.5 bg-zinc-900 border border-zinc-800 rounded-xl text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:border-orange-500 transition-colors"
               />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-zinc-300 mb-1.5 flex items-center gap-1.5">
+                <AtSign className="w-3.5 h-3.5 text-orange-400" />
+                Username
+              </label>
+              <div className="relative">
+                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm text-zinc-500 select-none">@</span>
+                <input
+                  type="text"
+                  value={username}
+                  onChange={(e) => handleUsernameChange(e.target.value)}
+                  required
+                  placeholder="jordan_miller"
+                  className="w-full pl-8 pr-3.5 py-2.5 bg-zinc-900 border border-zinc-800 rounded-xl text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:border-orange-500 transition-colors lowercase"
+                />
+              </div>
+              <span className="text-[10px] text-zinc-500 mt-1 block">Unique handle for invites, mentions, and your profile</span>
             </div>
 
             <div>

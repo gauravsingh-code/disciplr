@@ -52,7 +52,7 @@ export default function LoginPage() {
         updateUserProfile({
           id: response.user.id,
           name: response.user.name,
-          username: response.user.name.toLowerCase().replace(/\s+/g, '_'),
+          username: response.user.username || response.user.name.toLowerCase().replace(/\s+/g, '_'),
           email: response.user.email,
         });
       }

@@ -12,6 +12,7 @@ export interface UserSessionPayload {
   userId: string
   name: string
   email: string
+  username?: string
 }
 
 export async function hashPassword(password: string): Promise<string> {
@@ -38,6 +39,7 @@ export async function verifySessionToken(token: string): Promise<UserSessionPayl
       userId: payload.userId as string,
       name: payload.name as string,
       email: payload.email as string,
+      username: (payload.username as string) || undefined,
     }
   } catch {
     return null

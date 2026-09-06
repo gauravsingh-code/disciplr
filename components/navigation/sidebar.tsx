@@ -71,7 +71,7 @@ export function Sidebar({
   ];
 
   return (
-    <aside className="w-64 shrink-0 hidden md:flex flex-col justify-between p-4 border-r border-zinc-800/80 bg-zinc-950/60 min-h-[calc(100vh-4rem)]">
+    <aside className="w-64 shrink-0 hidden md:flex flex-col justify-between p-4 border-r border-zinc-800/80 bg-zinc-950/60 sticky top-16 h-[calc(100vh-4rem)] overflow-y-auto">
       <div className="space-y-6">
         {/* Navigation Links */}
         <div className="space-y-1">

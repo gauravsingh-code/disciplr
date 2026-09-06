@@ -20,9 +20,12 @@ export function Avatar({
   const [imageError, setImageError] = useState(false);
 
   const getInitials = (n: string) => {
-    const parts = n.trim().split(' ');
+    if (!n) return 'U';
+    const parts = n.trim().split(/\s+/).filter(Boolean);
     if (parts.length >= 2) {
-      return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+      const firstInitial = parts[0][0] || '';
+      const lastInitial = parts[parts.length - 1][0] || '';
+      return `${firstInitial}${lastInitial}`.toUpperCase();
     }
     return n.slice(0, 2).toUpperCase();
   };
@@ -44,7 +47,7 @@ export function Avatar({
 
   return (
     <div
-      className={`relative inline-flex items-center justify-center rounded-full overflow-hidden shrink-0 select-none ${sizeDimensions} ${ringStyles} ${className} bg-gradient-to-br from-zinc-800 to-zinc-900 border border-zinc-700/50`}
+      className={`relative inline-flex items-center justify-center rounded-full overflow-hidden shrink-0 select-none ${sizeDimensions} ${ringStyles} ${className} bg-gradient-to-tr from-zinc-800 via-zinc-800 to-zinc-700 text-orange-400 border border-zinc-700/60 font-bold`}
     >
       {src && !imageError ? (
         // eslint-disable-next-line @next/next/no-img-element
@@ -55,7 +58,7 @@ export function Avatar({
           className="w-full h-full object-cover"
         />
       ) : (
-        <span className="font-semibold text-zinc-300 tracking-wider">
+        <span className="font-bold tracking-wider select-none">
           {getInitials(name)}
         </span>
       )}

@@ -31,7 +31,7 @@ export async function POST(request: Request) {
         content,
         user_id,
         created_at,
-        user:users(id, name, avatar_url)
+        user:users(id, name, profile_img)
       `)
       .single();
 
@@ -45,7 +45,7 @@ export async function POST(request: Request) {
         content: comment.content,
         userId: comment.user_id,
         userName: (comment as any).user?.name || session.name,
-        userAvatar: (comment as any).user?.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80',
+        userAvatar: (comment as any).user?.profile_img || '',
         createdAt: 'Just now',
       },
     }, { status: 201 });
