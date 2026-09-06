@@ -103,6 +103,19 @@ export function EmberProvider({ children }: { children: React.ReactNode }) {
     // Attempt to bootstrap from live backend API
     fetch('/api/bootstrap')
       .then((res) => {
+        if (res.status === 401 || res.status === 404) {
+          // Stale cache eviction: user session is expired or deleted from database
+          try {
+            localStorage.removeItem(STORAGE_KEY);
+          } catch {}
+          setUser(INITIAL_USER);
+          setHabits([]);
+          setPods([]);
+          setFeedLogs([]);
+          setPosts([]);
+          setCompletedTodayHabitIds([]);
+          return null;
+        }
         if (res.ok) return res.json();
         return null;
       })
@@ -152,7 +165,7 @@ export function EmberProvider({ children }: { children: React.ReactNode }) {
 
   // Sync to localStorage
   useEffect(() => {
-    if (!isLoaded) return;
+    if (!isLoaded || !user?.id) return;
     try {
       localStorage.setItem(
         STORAGE_KEY,

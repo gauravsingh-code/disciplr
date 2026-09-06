@@ -29,6 +29,23 @@ export async function middleware(request: NextRequest) {
   }
 
   const pathname = request.nextUrl.pathname
+  const isExplicitLogout =
+    request.nextUrl.searchParams.has('logout') ||
+    request.nextUrl.searchParams.has('expired')
+
+  // Allow explicit logout/expired requests to clear token without redirecting back to /today
+  if (isExplicitLogout) {
+    const response = NextResponse.next()
+    response.cookies.delete('auth_token')
+    response.cookies.set('auth_token', '', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 0,
+    })
+    return response
+  }
 
   // 1. Protected routes: redirect unauthenticated users to /login
   const isProtectedRoute = PROTECTED_ROUTES.some(

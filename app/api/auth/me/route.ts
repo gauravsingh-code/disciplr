@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { getSessionUser } from '@/utils/auth'
+import { getSessionUser, clearSessionCookie } from '@/utils/auth'
 import { createClient } from '@/utils/supabase/server'
 
 export async function GET() {
@@ -18,8 +18,18 @@ export async function GET() {
       .eq('id', session.userId)
       .maybeSingle()
 
-    if (error || !user) {
-      return NextResponse.json({ error: 'User not found.' }, { status: 404 })
+    if (error || !user || !user.is_active) {
+      // User no longer exists in DB or deactivated: revoke cookie immediately
+      const response = NextResponse.json({ error: 'User session expired or deleted.' }, { status: 401 })
+      response.cookies.delete('auth_token')
+      response.cookies.set('auth_token', '', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 0,
+      })
+      return response
     }
 
     return NextResponse.json({ user }, { status: 200 })

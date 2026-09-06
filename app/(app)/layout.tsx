@@ -20,19 +20,26 @@ export default function AppLayout({
 }) {
   const pathname = usePathname();
 
-  // Guard against browser back-forward cache (bfcache) after signout
+  // Guard against stale sessions and browser back-forward cache (bfcache)
   useEffect(() => {
+    const verifySession = () => {
+      fetch('/api/auth/me')
+        .then((res) => {
+          if (!res.ok) {
+            try {
+              localStorage.removeItem('disciplr_ember_state_v2_live');
+            } catch {}
+            window.location.replace('/api/auth/logout');
+          }
+        })
+        .catch(() => {});
+    };
+
+    verifySession();
+
     const handlePageShow = (event: PageTransitionEvent) => {
       if (event.persisted) {
-        fetch('/api/auth/me')
-          .then((res) => {
-            if (!res.ok) {
-              window.location.replace('/login');
-            }
-          })
-          .catch(() => {
-            window.location.replace('/login');
-          });
+        verifySession();
       }
     };
 
